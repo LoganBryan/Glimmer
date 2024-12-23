@@ -3,6 +3,9 @@
 #define SHADER_H
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <stdio.h>
 #include <string>
@@ -22,6 +25,8 @@ public:
 	inline void SetBool(const std::string& name, bool value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
 	inline void SetInt(const std::string& name, int value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
 	inline void SetFloat(const std::string& name, float value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
+
+	inline void SetMatrix4(const std::string& name, glm::mat4 value) const {glUniformMatrix4fv(glGetUniformLocation(programID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));}
 
 private:
 	void checkShaderCompilation(unsigned int& shader, std::string shaderType);

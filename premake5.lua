@@ -9,6 +9,7 @@ IncludeDirs = {}
 IncludeDirs["GLFW"] = "thirdparty/GLFW/include"
 IncludeDirs["GLAD"] = "thirdparty/GLAD/include"
 IncludeDirs["STB"] = "thirdparty/stb"
+IncludeDirs["GLM"] = "thirdparty/glm"
 
 LibraryDirs ={}
 LibraryDirs["GLFW"] = "thirdparty/GLFW/lib-vc2022"
@@ -43,7 +44,8 @@ project "Glimmer"
     {
         "%{IncludeDirs.GLFW}",
         "%{IncludeDirs.GLAD}",
-        "%{IncludeDirs.STB}"
+        "%{IncludeDirs.STB}",
+        "%{IncludeDirs.GLM}"
     }
 
     libdirs
