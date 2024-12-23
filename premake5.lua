@@ -8,6 +8,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 IncludeDirs = {}
 IncludeDirs["GLFW"] = "thirdparty/GLFW/include"
 IncludeDirs["GLAD"] = "thirdparty/GLAD/include"
+IncludeDirs["STB"] = "thirdparty/stb"
 
 LibraryDirs ={}
 LibraryDirs["GLFW"] = "thirdparty/GLFW/lib-vc2022"
@@ -41,7 +42,8 @@ project "Glimmer"
     includedirs
     {
         "%{IncludeDirs.GLFW}",
-        "%{IncludeDirs.GLAD}"
+        "%{IncludeDirs.GLAD}",
+        "%{IncludeDirs.STB}"
     }
 
     libdirs

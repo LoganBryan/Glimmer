@@ -5,15 +5,17 @@
 #include <GLFW/glfw3.h>
 
 #include "Shader.h"
+#include "stb_image.h"
 
 // TEMP
 float vertices[] = {
-	// Pos             Col
-	0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f,	    // Top right
-	0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,    // Bottom right
-	-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,	// Bottom left
-	-0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f	    // Top left
+	// Pos				   Col                  Tex Coord
+	0.5f, 0.5f,   0.0f,    1.0f, 0.0f, 0.0f,    1.0f, 1.0f,		// Top right
+	0.5f, -0.5f,  0.0f,    1.0f, 0.0f, 0.0f,	1.0f, 0.0f,		// Bottom right
+	-0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,	0.0f, 0.0f,		// Bottom left
+	-0.5f, 0.5f,  0.0f,    0.0f, 0.0f, 1.0f,	0.0f, 1.0f		// Top left
 };
+
 unsigned int indices[] = {
 	0, 1, 3, // First
 	1, 2, 3  // Second
@@ -23,8 +25,14 @@ unsigned int indices[] = {
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void keyCallback(GLFWwindow*, int key, int scancode, int action, int mods);
+void loadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture);
 
 GLenum polyMode = GL_FILL;
+
+int width, height, nChannels;
+unsigned int textureOne, textureTwo;
+std::string imagePath = "assets/textures/uvmap.jpg";
+std::string image2Path = "assets/textures/exit.png";
 
 int main()
 {
@@ -72,16 +80,26 @@ int main()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// Interpret vertex data, 3 * float as we have 3 * 4 byte values for position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); // Pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Pos
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))); // Col
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // Col
 	glEnableVertexAttribArray(1);
 
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Tex coord
+	glEnableVertexAttribArray(2);
 
 	// Unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+
+	// Load and bind texture
+	loadTexture(imagePath, true, textureOne, GL_TEXTURE0);
+	loadTexture(image2Path, true, textureTwo, GL_TEXTURE1);
+
+	mainShader.Use();
+	mainShader.SetInt("uTexture", 0);
+	mainShader.SetInt("uTexture2", 1);
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -96,6 +114,7 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 		mainShader.Use();
 
+		//glBindTexture(GL_TEXTURE_2D, texture);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -133,4 +152,30 @@ void keyCallback(GLFWwindow*, int key, int scancode, int action, int mods)
 	{
 		polyMode = polyMode == GL_FILL ? GL_LINE : GL_FILL;
 	}
+}
+
+// Pretty rough function, but for now it's fine
+void loadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture)
+{
+	glGenTextures(1, &textureObject);
+	glActiveTexture(activeTexture);
+	glBindTexture(GL_TEXTURE_2D, textureObject);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	stbi_set_flip_vertically_on_load(flip);
+	unsigned char* imageData = stbi_load(path.c_str(), &width, &height, &nChannels, 4);
+	if (imageData)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		printf("Failed to load texture! %s", path.c_str());
+	}
+	stbi_image_free(imageData);
 }
