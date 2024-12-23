@@ -7,7 +7,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <sstream>
+
 #include "Shader.h"
+#include "FPSCounter.h"
 #include "stb_image.h"
 
 // TEMP
@@ -25,10 +28,10 @@ unsigned int indices[] = {
 };
 
 // Todo: Needs moving to it's own class
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
-void keyCallback(GLFWwindow*, int key, int scancode, int action, int mods);
-void loadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture);
+void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
+void ProcessInput(GLFWwindow* window);
+void KeyCallback(GLFWwindow*, int key, int scancode, int action, int mods);
+void LoadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture);
 
 GLenum polyMode = GL_FILL;
 
@@ -53,8 +56,8 @@ int main()
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
-	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-	glfwSetKeyCallback(window, keyCallback);
+	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+	glfwSetKeyCallback(window, KeyCallback);
 
 	// Initialize OGL Context
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -97,18 +100,25 @@ int main()
 	glBindVertexArray(0);
 
 	// Load and bind texture
-	loadTexture(imagePath, true, textureOne, GL_TEXTURE0);
-	loadTexture(image2Path, true, textureTwo, GL_TEXTURE1);
+	LoadTexture(imagePath, true, textureOne, GL_TEXTURE0);
+	LoadTexture(image2Path, true, textureTwo, GL_TEXTURE1);
 
 	mainShader.Use();
 	mainShader.SetInt("uTexture", 0);
 	mainShader.SetInt("uTexture2", 1);
 
+	FPSCounter fpsCounter;
+
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
 		// Input process
-		processInput(window);
+		ProcessInput(window);
+
+		fpsCounter.Update();
+		std::stringstream windowTitle;
+		windowTitle << "Glimmmer [ " << fpsCounter.GetFPS() << " fps ]";
+		glfwSetWindowTitle(window, windowTitle.str().c_str());
 
 		// Render
 		glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
@@ -142,12 +152,12 @@ int main()
 	return 0;
 }
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height)
+void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow* window)
+void ProcessInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
@@ -156,7 +166,7 @@ void processInput(GLFWwindow* window)
 
 }
 
-void keyCallback(GLFWwindow*, int key, int scancode, int action, int mods)
+void KeyCallback(GLFWwindow*, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_F11 && action == GLFW_PRESS)
 	{
@@ -165,7 +175,7 @@ void keyCallback(GLFWwindow*, int key, int scancode, int action, int mods)
 }
 
 // Pretty rough function, but for now it's fine
-void loadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture)
+void LoadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture)
 {
 	glGenTextures(1, &textureObject);
 	glActiveTexture(activeTexture);
