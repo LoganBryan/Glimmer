@@ -15,16 +15,47 @@
 
 // TEMP
 float vertices[] = {
-	// Pos				   Col                  Tex Coord
-	0.5f, 0.5f,   0.0f,    1.0f, 0.0f, 0.0f,    1.0f, 1.0f,		// Top right
-	0.5f, -0.5f,  0.0f,    1.0f, 0.0f, 0.0f,	1.0f, 0.0f,		// Bottom right
-	-0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,	0.0f, 0.0f,		// Bottom left
-	-0.5f, 0.5f,  0.0f,    0.0f, 0.0f, 1.0f,	0.0f, 1.0f		// Top left
-};
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-unsigned int indices[] = {
-	0, 1, 3, // First
-	1, 2, 3  // Second
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
 // Todo: Needs moving to it's own class
@@ -48,7 +79,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Create window context
-	GLFWwindow* window = glfwCreateWindow(800, 600, "Glimmer", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(800, 800, "Glimmer", NULL, NULL);
 	if (window == NULL)
 	{
 		printf("Failed to create window!");
@@ -71,10 +102,10 @@ int main()
 	Shader mainShader("shaders/shader.vert", "shaders/shader.frag");
 
 	// Vertex Array Object, Vertex Buffer Object & Element Buffer Object 
-	unsigned int VAO, VBO, EBO;
+	unsigned int VAO, VBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
+	//glGenBuffers(1, &EBO);
 
 	// Bind VAO then bind + set vertex buffers
 	glBindVertexArray(VAO);
@@ -82,18 +113,18 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// Interpret vertex data, 3 * float as we have 3 * 4 byte values for position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); // Pos
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // Col
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); // Tex Coord
 	glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Tex coord
-	glEnableVertexAttribArray(2);
+	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Tex coord
+	//glEnableVertexAttribArray(2);
 
 	// Unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -108,6 +139,7 @@ int main()
 	mainShader.SetInt("uTexture2", 1);
 
 	FPSCounter fpsCounter;
+	glEnable(GL_DEPTH_TEST);
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -122,23 +154,37 @@ int main()
 
 		// Render
 		glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 		mainShader.Use();
 
-		//glBindTexture(GL_TEXTURE_2D, texture);
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 projection = glm::mat4(1.0f);
+
+		model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+
+		mainShader.SetMatrix4("model", model);
+		glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(), "view"), 1, GL_FALSE, &view[0][0]);
+		mainShader.SetMatrix4("projection", projection);
 
 		// SRT
 		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::scale(trans, cos((float)glfwGetTime()) * glm::vec3(1.0f, 1.0f, 1.0f));
+		trans = glm::scale(trans, glm::vec3(1.0f, 1.0f, 1.0f));
 		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 		trans = glm::translate(trans, cos((float)glfwGetTime()) * glm::vec3(0.5f, 0.5f, 0.0f));
 		mainShader.SetMatrix4("transform", trans);
 
+		//glBindTexture(GL_TEXTURE_2D, texture);
+		glBindVertexArray(VAO);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
 		// Call events + swap buffers
+		//glfwSwapInterval(0);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -181,9 +227,9 @@ void LoadTexture(std::string path, bool flip, unsigned int textureObject, GLenum
 	glActiveTexture(activeTexture);
 	glBindTexture(GL_TEXTURE_2D, textureObject);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	stbi_set_flip_vertically_on_load(flip);
