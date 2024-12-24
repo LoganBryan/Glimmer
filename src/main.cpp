@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "Shader.h"
+#include "Camera.h"
 #include "FPSCounter.h"
 #include "stb_image.h"
 
@@ -64,12 +65,24 @@ void ProcessInput(GLFWwindow* window);
 void KeyCallback(GLFWwindow*, int key, int scancode, int action, int mods);
 void LoadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture);
 
+// This will eventually be in the camera class v
+void MouseCallback(GLFWwindow* window, double xpos, double ypos); 
+void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
 GLenum polyMode = GL_FILL;
 
 int width, height, nChannels;
 unsigned int textureOne, textureTwo;
 std::string imagePath = "assets/textures/uvmap.jpg";
 std::string image2Path = "assets/textures/exit.png";
+
+bool firstMouseInput = true;
+float lastMouseX = 400, lastMouseY = 400;
+float yaw = -90.0f;
+float pitch = 0.0f;
+float fov = 90.0f;
+
+Camera mainCamera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 int main()
 {
@@ -88,7 +101,6 @@ int main()
 	}
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-	glfwSetKeyCallback(window, KeyCallback);
 
 	// Initialize OGL Context
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -98,6 +110,11 @@ int main()
 	}
 
 	//glViewport(0, 0, 800, 600);
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetKeyCallback(window, KeyCallback);
+	glfwSetCursorPosCallback(window, MouseCallback);
+	glfwSetScrollCallback(window, ScrollCallback);
 
 	Shader mainShader("shaders/shader.vert", "shaders/shader.frag");
 
@@ -146,10 +163,11 @@ int main()
 	{
 		// Input process
 		ProcessInput(window);
+		mainCamera.HandleCameraInput(window);
 
 		fpsCounter.Update();
 		std::stringstream windowTitle;
-		windowTitle << "Glimmmer [ " << fpsCounter.GetFPS() << " fps ]";
+		windowTitle << "Glimmer [ " << fpsCounter.GetFPS() << " fps ]";
 		glfwSetWindowTitle(window, windowTitle.str().c_str());
 
 		// Render
@@ -159,13 +177,16 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 		mainShader.Use();
 
+		// TODO: set up this matrix inside camera class, so we don't have to do view = camera.Update() it's weird and awkward
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = glm::mat4(1.0f);
 		glm::mat4 projection = glm::mat4(1.0f);
 
-		model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-		projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+		//model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+		//view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		view = mainCamera.Update();
+		projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
 
 		mainShader.SetMatrix4("model", model);
 		glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(), "view"), 1, GL_FALSE, &view[0][0]);
@@ -244,4 +265,48 @@ void LoadTexture(std::string path, bool flip, unsigned int textureObject, GLenum
 		printf("Failed to load texture! %s", path.c_str());
 	}
 	stbi_image_free(imageData);
+}
+
+void MouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouseInput)
+	{
+		lastMouseX = xpos;
+		lastMouseY = ypos;
+		firstMouseInput = false;
+	}
+
+	float xOffset = xpos - lastMouseX;
+	float yOffset = lastMouseY - ypos;
+
+	lastMouseX = xpos;
+	lastMouseY = ypos;
+
+	const float speed = 0.1f;
+	xOffset *= speed;
+	yOffset *= speed;
+
+	yaw += xOffset;
+	pitch += yOffset;
+
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(yaw) * cos(glm::radians(pitch)));
+	direction.y = sin(glm::radians(pitch));
+	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	
+	mainCamera.SetFront(glm::normalize(direction));
+}
+
+void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	fov -= (float)yoffset;
+	if (fov < 1.0f)
+		fov = 1.0f;
+	if (fov > 90.0f)
+		fov = 90.0f;
 }
