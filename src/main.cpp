@@ -16,47 +16,47 @@
 
 // TEMP
 float vertices[] = {
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,
+	 0.5f, -0.5f, -0.5f,
+	 0.5f,  0.5f, -0.5f,
+	 0.5f,  0.5f, -0.5f,
+	-0.5f,  0.5f, -0.5f,
+	-0.5f, -0.5f, -0.5f,
 
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,
+	 0.5f, -0.5f,  0.5f,
+	 0.5f,  0.5f,  0.5f,
+	 0.5f,  0.5f,  0.5f,
+	-0.5f,  0.5f,  0.5f,
+	-0.5f, -0.5f,  0.5f,
 
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,
+	-0.5f,  0.5f, -0.5f,
+	-0.5f, -0.5f, -0.5f,
+	-0.5f, -0.5f, -0.5f,
+	-0.5f, -0.5f,  0.5f,
+	-0.5f,  0.5f,  0.5f,
 
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,
+	 0.5f,  0.5f, -0.5f,
+	 0.5f, -0.5f, -0.5f,
+	 0.5f, -0.5f, -0.5f,
+	 0.5f, -0.5f,  0.5f,
+	 0.5f,  0.5f,  0.5f,
 
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,
+	 0.5f, -0.5f, -0.5f,
+	 0.5f, -0.5f,  0.5f,
+	 0.5f, -0.5f,  0.5f,
+	-0.5f, -0.5f,  0.5f,
+	-0.5f, -0.5f, -0.5f,
 
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	-0.5f,  0.5f, -0.5f,
+	 0.5f,  0.5f, -0.5f,
+	 0.5f,  0.5f,  0.5f,
+	 0.5f,  0.5f,  0.5f,
+	-0.5f,  0.5f,  0.5f,
+	-0.5f,  0.5f, -0.5f
 };
 
 // Todo: Needs moving to it's own class
@@ -71,7 +71,10 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 GLenum polyMode = GL_FILL;
 
-int width, height, nChannels;
+int width = 800;
+int height = 600;
+int nChannels;
+
 unsigned int textureOne, textureTwo;
 std::string imagePath = "assets/textures/uvmap.jpg";
 std::string image2Path = "assets/textures/exit.png";
@@ -84,6 +87,8 @@ float fov = 90.0f;
 
 Camera mainCamera(glm::vec3(0.0f, 0.0f, 3.0f));
 
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
 int main()
 {
 	glfwInit();
@@ -92,7 +97,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Create window context
-	GLFWwindow* window = glfwCreateWindow(800, 800, "Glimmer", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "Glimmer", NULL, NULL);
 	if (window == NULL)
 	{
 		printf("Failed to create window!");
@@ -116,44 +121,55 @@ int main()
 	glfwSetCursorPosCallback(window, MouseCallback);
 	glfwSetScrollCallback(window, ScrollCallback);
 
-	Shader mainShader("shaders/shader.vert", "shaders/shader.frag");
+	Shader mainShader("shaders/light.vert", "shaders/light.frag");
+	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
 
-	// Vertex Array Object, Vertex Buffer Object & Element Buffer Object 
-	unsigned int VAO, VBO;
-	glGenVertexArrays(1, &VAO);
+	// Vertex Array Object, Vertex Buffer Object
+	unsigned int objectVAO, VBO;
+	glGenVertexArrays(1, &objectVAO);
 	glGenBuffers(1, &VBO);
-	//glGenBuffers(1, &EBO);
-
-	// Bind VAO then bind + set vertex buffers
-	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+	glBindVertexArray(objectVAO);
+
+	// Interpret vertex data, 3 * float as we have 3 * 4 byte values for position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // Pos
+	glEnableVertexAttribArray(0);
+
+	// Object for light source
+	unsigned int lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	// Interpret vertex data, 3 * float as we have 3 * 4 byte values for position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); // Pos
-	glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); // Tex Coord
+	//glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); // Tex Coord
-	glEnableVertexAttribArray(1);
-
-	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Tex coord
-	//glEnableVertexAttribArray(2);
+		//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Tex coord
+		//glEnableVertexAttribArray(2);
 
 	// Unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	// Load and bind texture
-	LoadTexture(imagePath, true, textureOne, GL_TEXTURE0);
-	LoadTexture(image2Path, true, textureTwo, GL_TEXTURE1);
+		//LoadTexture(imagePath, true, textureOne, GL_TEXTURE0);
+		//LoadTexture(image2Path, true, textureTwo, GL_TEXTURE1);
 
 	mainShader.Use();
-	mainShader.SetInt("uTexture", 0);
-	mainShader.SetInt("uTexture2", 1);
+		//mainShader.SetInt("uTexture", 0);
+		//mainShader.SetInt("uTexture2", 1);
+	mainShader.SetVec3("objectColor", { 0.0f, 0.5f, 0.8f });
+	mainShader.SetVec3("lightColor", { 1.0f, 1.0f, 1.0f });
 
 	FPSCounter fpsCounter;
 	glEnable(GL_DEPTH_TEST);
@@ -177,32 +193,55 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 		mainShader.Use();
 
-		// TODO: set up this matrix inside camera class, so we don't have to do view = camera.Update() it's weird and awkward
-		glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 view = glm::mat4(1.0f);
-		glm::mat4 projection = glm::mat4(1.0f);
-
-		//model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
-		model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-		//view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
+		glm::mat4 view = mainCamera.GetViewMatrix();
 		view = mainCamera.Update();
-		projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
-
-		mainShader.SetMatrix4("model", model);
-		glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(), "view"), 1, GL_FALSE, &view[0][0]);
 		mainShader.SetMatrix4("projection", projection);
+		mainShader.SetMatrix4("view", view);
 
-		// SRT
-		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::scale(trans, glm::vec3(1.0f, 1.0f, 1.0f));
-		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-		trans = glm::translate(trans, cos((float)glfwGetTime()) * glm::vec3(0.5f, 0.5f, 0.0f));
-		mainShader.SetMatrix4("transform", trans);
+		glm::mat4 model = glm::mat4(1.0f);
+		mainShader.SetMatrix4("model", model);
+		mainShader.SetVec3("objectColor", { sin((float)glfwGetTime() + 6), sin((float)glfwGetTime() + 4), sin((float)glfwGetTime() + 2)});
 
-		//glBindTexture(GL_TEXTURE_2D, texture);
-		glBindVertexArray(VAO);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		// render cube object
+		glBindVertexArray(objectVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		// render light object
+		lightSourceShader.Use();
+		lightSourceShader.SetMatrix4("projection", projection);
+		lightSourceShader.SetMatrix4("view", view);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.3f));
+		lightSourceShader.SetMatrix4("model", model);
+
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+		////model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
+		//model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+		////view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		//view = mainCamera.Update();
+		//projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
+
+		//mainShader.SetMatrix4("model", model);
+		//glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(), "view"), 1, GL_FALSE, &view[0][0]);
+		//mainShader.SetMatrix4("projection", projection);
+
+		//// SRT
+		//glm::mat4 trans = glm::mat4(1.0f);
+		//trans = glm::scale(trans, glm::vec3(1.0f, 1.0f, 1.0f));
+		//trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+		//trans = glm::translate(trans, cos((float)glfwGetTime()) * glm::vec3(0.5f, 0.5f, 0.0f));
+		//mainShader.SetMatrix4("transform", trans);
+
+		////glBindTexture(GL_TEXTURE_2D, texture);
+		//glBindVertexArray(lVAO);
+		////glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// Call events + swap buffers
 		//glfwSwapInterval(0);
@@ -211,7 +250,8 @@ int main()
 	}
 
 	// Deallocate resources
-	glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &objectVAO);
+	glDeleteVertexArrays(1, &lightVAO);
 	glDeleteBuffers(1, &VBO);
 	mainShader.Delete();
 
