@@ -21,6 +21,7 @@ public:
 
 	inline const void SetFront(glm::vec3 newFront) { cameraFront = newFront; }
 	inline const glm::mat4 GetViewMatrix() const { return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp); }
+	inline const glm::vec3 GetCameraPosition() const { return cameraPos; }
 private:
 	glm::vec3 up{ 0.0f, 1.0f, 0.0f };
 
