@@ -24,7 +24,7 @@ public:
 
 	inline void SetBool(const std::string& name, bool value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
 	inline void SetInt(const std::string& name, int value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
-	inline void SetFloat(const std::string& name, float value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
+	inline void SetFloat(const std::string& name, float value) const { glUniform1f(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
 
 	inline void SetMatrix4(const std::string& name, glm::mat4 value) const {glUniformMatrix4fv(glGetUniformLocation(programID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));}
 	inline void SetVec3(const std::string& name, glm::vec3 value) const { glUniform3fv(glGetUniformLocation(programID, name.c_str()), 1, glm::value_ptr(value)); }

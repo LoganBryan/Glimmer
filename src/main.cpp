@@ -171,7 +171,11 @@ int main()
 	mainShader.Use();
 		//mainShader.SetInt("uTexture", 0);
 		//mainShader.SetInt("uTexture2", 1);
-	mainShader.SetVec3("objectColor", { 0.0f, 0.5f, 0.8f });
+	mainShader.SetVec3("material.ambient", { 0.0f, 0.5f, 0.8f });
+	mainShader.SetVec3("material.diffuse", { 0.0f, 0.5f, 0.8f });
+	mainShader.SetVec3("material.specular", { 0.5f, 0.5f, 0.5f });
+	mainShader.SetFloat("material.shininess", 32.0f);
+
 	mainShader.SetVec3("lightColor", { 1.0f, 1.0f, 1.0f });
 
 	FPSCounter fpsCounter;
@@ -204,10 +208,16 @@ int main()
 
 		glm::mat4 model = glm::mat4(1.0f);
 		mainShader.SetMatrix4("model", model);
-		mainShader.SetVec3("objectColor", { sin((float)glfwGetTime() + 6), sin((float)glfwGetTime() + 4), sin((float)glfwGetTime() + 2)});
-		mainShader.SetVec3("lightPos", lightPos);
+		mainShader.SetVec3("light.position", lightPos);
 		mainShader.SetVec3("viewPos", mainCamera.GetCameraPosition());
 
+		mainShader.SetVec3("light.ambient", { 0.2f, 0.2f, 0.2f });
+		mainShader.SetVec3("light.diffuse", { 0.5f, 0.5f, 0.5f });
+		mainShader.SetVec3("light.specular", { 1.0f, 1.0f, 1.0f });
+
+		mainShader.SetVec3("material.ambient", { sin((float)glfwGetTime() + 6), sin((float)glfwGetTime() + 4), sin((float)glfwGetTime() + 2)});
+		mainShader.SetVec3("material.diffuse", { sin((float)glfwGetTime() + 6), sin((float)glfwGetTime() + 4), sin((float)glfwGetTime() + 2)});
+		
 		// render cube object
 		glBindVertexArray(objectVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);

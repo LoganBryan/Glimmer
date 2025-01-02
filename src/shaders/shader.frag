@@ -1,11 +1,11 @@
 #version 460 core
 
-out vec4 fragColor;
-
 in vec2 texCoord;
 
 uniform sampler2D uTexture;
 uniform sampler2D uTexture2;
+
+out vec4 fragColor;
 
 void main()
 {
