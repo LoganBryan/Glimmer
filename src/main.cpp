@@ -16,54 +16,55 @@
 
 // TEMP
 float vertices[] = {
-	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	// Pos          // Normal           // TexCoord
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 };
 
 // Todo: Needs moving to it's own class
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
 void ProcessInput(GLFWwindow* window);
 void KeyCallback(GLFWwindow*, int key, int scancode, int action, int mods);
-void LoadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture);
+unsigned int LoadTexture(char const* path);
 
 // This will eventually be in the camera class v
 void MouseCallback(GLFWwindow* window, double xpos, double ypos); 
@@ -76,8 +77,9 @@ int height = 600;
 int nChannels;
 
 unsigned int textureOne, textureTwo;
-std::string imagePath = "assets/textures/uvmap.jpg";
-std::string image2Path = "assets/textures/exit.png";
+std::string imagePath = "assets/textures/boxTex.png";
+std::string image2Path = "assets/textures/boxSpecular.png";
+std::string image3Path = "assets/textures/boxEmission.png";
 
 bool firstMouseInput = true;
 float lastMouseX = 400, lastMouseY = 400;
@@ -135,11 +137,14 @@ int main()
 	glBindVertexArray(objectVAO);
 
 	// Interpret vertex data, 3 * float as we have 3 * 4 byte values for position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); // Pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Pos
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))); // normal
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // normal
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // tex
+	glEnableVertexAttribArray(2);
 
 	// Object for light source
 	unsigned int lightVAO;
@@ -148,7 +153,7 @@ int main()
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -167,16 +172,21 @@ int main()
 	// Load and bind texture
 		//LoadTexture(imagePath, true, textureOne, GL_TEXTURE0);
 		//LoadTexture(image2Path, true, textureTwo, GL_TEXTURE1);
-
+	unsigned int mainDiffTexture = LoadTexture(imagePath.c_str());
+	unsigned int mainSpecularTexture = LoadTexture(image2Path.c_str());
+	unsigned int mainEmissionTexture = LoadTexture(image3Path.c_str());
+	
 	mainShader.Use();
+	mainShader.SetInt("material.diffuse", 0);
+	mainShader.SetInt("material.specular", 1);
+	mainShader.SetInt("material.emission", 2);
+
 		//mainShader.SetInt("uTexture", 0);
 		//mainShader.SetInt("uTexture2", 1);
-	mainShader.SetVec3("material.ambient", { 0.0f, 0.5f, 0.8f });
-	mainShader.SetVec3("material.diffuse", { 0.0f, 0.5f, 0.8f });
-	mainShader.SetVec3("material.specular", { 0.5f, 0.5f, 0.5f });
-	mainShader.SetFloat("material.shininess", 32.0f);
-
-	mainShader.SetVec3("lightColor", { 1.0f, 1.0f, 1.0f });
+	//mainShader.SetVec3("material.ambient", { 0.0f, 0.5f, 0.8f });
+	//mainShader.SetVec3("material.diffuse", { 0.0f, 0.5f, 0.8f });
+	//mainShader.SetVec3("material.specular", { 0.5f, 0.5f, 0.5f });
+	//mainShader.SetFloat("material.shininess", 32.0f);
 
 	FPSCounter fpsCounter;
 	glEnable(GL_DEPTH_TEST);
@@ -198,7 +208,16 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
+
 		mainShader.Use();
+		mainShader.SetVec3("light.position", lightPos);
+		mainShader.SetVec3("viewPos", mainCamera.GetCameraPosition());
+
+		mainShader.SetVec3("light.ambient", { 0.2f, 0.2f, 0.2f });
+		mainShader.SetVec3("light.diffuse", { 0.5f, 0.5f, 0.5f });
+		mainShader.SetVec3("light.specular", { 1.0f, 1.0f, 1.0f });
+
+		mainShader.SetFloat("material.shininess", 64.0f);
 
 		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
 		glm::mat4 view = mainCamera.GetViewMatrix();
@@ -208,16 +227,19 @@ int main()
 
 		glm::mat4 model = glm::mat4(1.0f);
 		mainShader.SetMatrix4("model", model);
-		mainShader.SetVec3("light.position", lightPos);
-		mainShader.SetVec3("viewPos", mainCamera.GetCameraPosition());
-
-		mainShader.SetVec3("light.ambient", { 0.2f, 0.2f, 0.2f });
-		mainShader.SetVec3("light.diffuse", { 0.5f, 0.5f, 0.5f });
-		mainShader.SetVec3("light.specular", { 1.0f, 1.0f, 1.0f });
-
-		mainShader.SetVec3("material.ambient", { sin((float)glfwGetTime() + 6), sin((float)glfwGetTime() + 4), sin((float)glfwGetTime() + 2)});
-		mainShader.SetVec3("material.diffuse", { sin((float)glfwGetTime() + 6), sin((float)glfwGetTime() + 4), sin((float)glfwGetTime() + 2)});
+		//mainShader.SetVec3("material.diffuse", { sin((float)glfwGetTime() + 6), sin((float)glfwGetTime() + 4), sin((float)glfwGetTime() + 2)});
 		
+		// bind diffuse tex
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, mainDiffTexture);
+		// bind specular tex
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, mainSpecularTexture);
+		// bind emission tex
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, mainEmissionTexture);
+
+
 		// render cube object
 		glBindVertexArray(objectVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -299,29 +321,48 @@ void KeyCallback(GLFWwindow*, int key, int scancode, int action, int mods)
 }
 
 // Pretty rough function, but for now it's fine
-void LoadTexture(std::string path, bool flip, unsigned int textureObject, GLenum activeTexture)
+unsigned int LoadTexture(char const* path)
 {
-	glGenTextures(1, &textureObject);
-	glActiveTexture(activeTexture);
-	glBindTexture(GL_TEXTURE_2D, textureObject);
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	int width, height, nComponents;
+	unsigned char* data = stbi_load(path, &width, &height, &nComponents, 0);
 
-	stbi_set_flip_vertically_on_load(flip);
-	unsigned char* imageData = stbi_load(path.c_str(), &width, &height, &nChannels, 4);
-	if (imageData)
+	if (data)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+		GLenum format{};
+		if (nComponents == 1)
+		{
+			format = GL_RED;
+		}
+		else if (nComponents == 3)
+		{
+			format = GL_RGB;
+		}
+		else if (nComponents == 4)
+		{
+			format = GL_RGBA;
+		}
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
 	}
 	else
 	{
-		printf("Failed to load texture! %s", path.c_str());
+		printf("Failed to load texture at path: %s!", path);
+		stbi_image_free(data);
 	}
-	stbi_image_free(imageData);
+
+	return textureID;
 }
 
 void MouseCallback(GLFWwindow* window, double xpos, double ypos)
