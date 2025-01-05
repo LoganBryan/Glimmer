@@ -8,6 +8,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <sstream>
+#include <format>
+#include <vector>
 
 #include "Shader.h"
 #include "Camera.h"
@@ -76,6 +78,20 @@ glm::vec3 cubePositions[] = {
 	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
+std::vector<glm::vec3> staticLightPositions = {
+	glm::vec3(0.7f,  0.2f,  2.0f),
+	glm::vec3(2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f,  2.0f, -12.0f),
+	glm::vec3(0.5f,  0.8f, -3.0f)
+};
+
+std::vector<glm::vec3> lightPositions = {
+	glm::vec3(0.7f,  0.2f,  2.0f),
+	glm::vec3(2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f,  2.0f, -12.0f),
+	glm::vec3(0.0f,  0.0f, -3.0f)
+};
+
 // Todo: Needs moving to it's own class
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
 void ProcessInput(GLFWwindow* window);
@@ -85,6 +101,8 @@ unsigned int LoadTexture(char const* path);
 // This will eventually be in the camera class v
 void MouseCallback(GLFWwindow* window, double xpos, double ypos); 
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLenum id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 
 GLenum polyMode = GL_FILL;
 
@@ -139,7 +157,11 @@ int main()
 	glfwSetCursorPosCallback(window, MouseCallback);
 	glfwSetScrollCallback(window, ScrollCallback);
 
-	Shader mainShader("shaders/light.vert", "shaders/spotLight.frag");
+	glEnable(GL_DEBUG_OUTPUT);
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glDebugMessageCallback(MessageCallback, nullptr);
+
+	Shader mainShader("shaders/light.vert", "shaders/multiLight.frag");
 	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
 
 	// Vertex Array Object, Vertex Buffer Object
@@ -172,22 +194,11 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); // Tex Coord
-	//glEnableVertexAttribArray(1);
-
-		//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Tex coord
-		//glEnableVertexAttribArray(2);
-
 	// Unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	// Load and bind texture
-		//LoadTexture(imagePath, true, textureOne, GL_TEXTURE0);
-		//LoadTexture(image2Path, true, textureTwo, GL_TEXTURE1);
+	// Load textures
 	unsigned int mainDiffTexture = LoadTexture(imagePath.c_str());
 	unsigned int mainSpecularTexture = LoadTexture(image2Path.c_str());
 	unsigned int mainEmissionTexture = LoadTexture(image3Path.c_str());
@@ -196,15 +207,8 @@ int main()
 	mainShader.SetInt("material.diffuse", 0);
 	mainShader.SetInt("material.specular", 1);
 	mainShader.SetInt("material.emission", 2);
+	mainShader.SetFloat("material.shininess", 64.0f);
 	mainShader.SetFloat("material.emissionShift", 0.0f);
-
-
-		//mainShader.SetInt("uTexture", 0);
-		//mainShader.SetInt("uTexture2", 1);
-	//mainShader.SetVec3("material.ambient", { 0.0f, 0.5f, 0.8f });
-	//mainShader.SetVec3("material.diffuse", { 0.0f, 0.5f, 0.8f });
-	//mainShader.SetVec3("material.specular", { 0.5f, 0.5f, 0.5f });
-	//mainShader.SetFloat("material.shininess", 32.0f);
 
 	FPSCounter fpsCounter;
 	glEnable(GL_DEPTH_TEST);
@@ -228,28 +232,29 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 
 		mainShader.Use();
-
-		mainShader.SetVec3("light.position", lightPos);
-		mainShader.SetVec3("light.position", mainCamera.cameraPos);
-		mainShader.SetVec3("light.direction", mainCamera.cameraFront);
-
-		//mainShader.SetVec3("light.position", 0.0f, 10.0f, 0.0f);
-		//mainShader.SetVec3("light.direction", 0.0f, -1.0f, 0.0f);
-
-		mainShader.SetFloat("light.cutoff", glm::cos(glm::radians(12.5f)));
-		mainShader.SetFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
 		mainShader.SetVec3("viewPos", mainCamera.cameraPos);
 
-		mainShader.SetVec3("light.ambient", 0.1f, 0.1f, 0.1f );
-		mainShader.SetVec3("light.diffuse", 0.8f, 0.8f, 0.8f );
-		mainShader.SetVec3("light.specular", 1.0f, 1.0f, 1.0f );
+		// Directional Light
+		mainShader.SetVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
+		mainShader.SetVec3("directionalLight.ambient", 0.05f, 0.05f, 0.05f);
+		mainShader.SetVec3("directionalLight.diffuse", 0.4f, 0.4f, 0.4f);
+		mainShader.SetVec3("directionalLight.specular", 0.5f, 0.5f, 0.5f);
 
-		// https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
-		mainShader.SetFloat("light.constant", 1.0f);
-		mainShader.SetFloat("light.linear", 0.35f);
-		mainShader.SetFloat("light.quadratic", 0.44f);
+		// Point Lights
+		for (int i = 0; i < lightPositions.size(); i++)
+		{
+			auto glslLight = std::format("pointLights[{}].", i);
+			std::string out = glslLight + "position";
+			mainShader.SetVec3(glslLight + "position", lightPositions[i]);
+			mainShader.SetVec3(glslLight + "ambient", 0.05f, 0.05f, 0.05f);
+			mainShader.SetVec3(glslLight + "diffuse", 0.8f, 0.8f, 0.8f);
+			mainShader.SetVec3(glslLight + "specular", 1.0f, 1.0f, 1.0f);
 
-		mainShader.SetFloat("material.shininess", 64.0f);
+			// https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
+			mainShader.SetFloat(glslLight + "constant", 1.0f);
+			mainShader.SetFloat(glslLight + "linear", 0.35f);
+			mainShader.SetFloat(glslLight + "quadratic", 0.44f);
+		}
 
 		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
 		glm::mat4 view = mainCamera.GetViewMatrix();
@@ -277,7 +282,7 @@ int main()
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
-			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			mainShader.SetMatrix4("model", model);
 			
 			glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -288,37 +293,24 @@ int main()
 		lightSourceShader.SetMatrix4("projection", projection);
 		lightSourceShader.SetMatrix4("view", view);
 
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, lightPos);
-		model = glm::scale(model, glm::vec3(0.3f));
-		lightSourceShader.SetMatrix4("model", model);
-
-		lightPos = glm::vec3(sin((float)glfwGetTime() + 6) * 5, sin((float)glfwGetTime() + 4) * 2.5, (sin((float)glfwGetTime() + 2) * 6));
-
 		glBindVertexArray(lightVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		////model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
-		//model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-		////view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-		//view = mainCamera.Update();
-		//projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
+		//TODO: Should eventually be changed to allow adding/ removing pointlights, right now the shader has it's own value for how many lights it has.. but this should be simple to change
+		for (unsigned int i = 0; i < lightPositions.size(); i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, lightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.3f));
+			lightSourceShader.SetMatrix4("model", model);
 
-		//mainShader.SetMatrix4("model", model);
-		//glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(), "view"), 1, GL_FALSE, &view[0][0]);
-		//mainShader.SetMatrix4("projection", projection);
+			lightPositions[i].x = sin((float)glfwGetTime() + 6) * staticLightPositions[i].x * 1.5;
+			lightPositions[i].y = sin((float)glfwGetTime() + 4) * staticLightPositions[i].y * 1.5;
+			lightPositions[i].z = sin((float)glfwGetTime() + 2) * staticLightPositions[i].z * 1.5;
+			//lightPositions[i].y += sin((float)glfwGetTime() + 4) * 5;
+			//lightPositions[i].z = sin((float)glfwGetTime() + 2) * 5;
 
-		//// SRT
-		//glm::mat4 trans = glm::mat4(1.0f);
-		//trans = glm::scale(trans, glm::vec3(1.0f, 1.0f, 1.0f));
-		//trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-		//trans = glm::translate(trans, cos((float)glfwGetTime()) * glm::vec3(0.5f, 0.5f, 0.0f));
-		//mainShader.SetMatrix4("transform", trans);
-
-		////glBindTexture(GL_TEXTURE_2D, texture);
-		//glBindVertexArray(lVAO);
-		////glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		// Call events + swap buffers
 		glfwSwapInterval(0);
@@ -445,4 +437,10 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 		fov = 1.0f;
 	if (fov > 90.0f)
 		fov = 90.0f;
+}
+
+void MessageCallback(GLenum source, GLenum type, GLenum id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+	std::cerr << "OGL Debug\n";
+	printf("Source: 0x%x | Type: 0x%x | ID: %u\n Severity: 0x%x\n%s\n\n", source, type, id, severity, message);
 }
