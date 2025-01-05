@@ -3,11 +3,14 @@
 Camera::Camera(glm::vec3 initialPosition): cameraPos(initialPosition)
 {
 	cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-	cameraDirection = glm::normalize(cameraPos - cameraTarget);
-
-	cameraRight = glm::normalize(glm::cross(up, cameraDirection));
 	cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+	up = glm::vec3(0.0f, 1.0f, 0.0f);
+	worldUp = up;
+
+	cameraDirection = glm::normalize(cameraPos - cameraTarget);
+	cameraRight = glm::normalize(glm::cross(up, cameraDirection));
 	cameraUp = glm::cross(cameraDirection, cameraRight);
+
 }
 
 glm::mat4 Camera::Update()

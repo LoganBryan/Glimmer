@@ -13,9 +13,9 @@ uniform mat4 projection;
 
 void main()
 {
-	fragPos = vec3(model * vec4(aPos, 1.0f));
+	fragPos = vec3(model * vec4(aPos, 1.0));
 	normal = mat3(transpose(inverse(model))) * aNormal; // This is kinda expensive, shouldn't do it on the GPU
 	texCoords = aTexCoords;
 
-	gl_Position = projection * view * vec4(fragPos, 1.0f);
+	gl_Position = projection * view * vec4(fragPos, 1.0);
 }

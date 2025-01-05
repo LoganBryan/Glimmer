@@ -14,6 +14,9 @@
 #include "FPSCounter.h"
 #include "stb_image.h"
 
+#define PI 3.14159265358979323846
+#define TWO_PI 6.2831855
+
 // TEMP
 float vertices[] = {
 	// Pos          // Normal           // TexCoord
@@ -58,6 +61,19 @@ float vertices[] = {
 	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
 	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+};
+
+glm::vec3 cubePositions[] = {
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
 // Todo: Needs moving to it's own class
@@ -123,7 +139,7 @@ int main()
 	glfwSetCursorPosCallback(window, MouseCallback);
 	glfwSetScrollCallback(window, ScrollCallback);
 
-	Shader mainShader("shaders/light.vert", "shaders/light.frag");
+	Shader mainShader("shaders/light.vert", "shaders/spotLight.frag");
 	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
 
 	// Vertex Array Object, Vertex Buffer Object
@@ -180,6 +196,8 @@ int main()
 	mainShader.SetInt("material.diffuse", 0);
 	mainShader.SetInt("material.specular", 1);
 	mainShader.SetInt("material.emission", 2);
+	mainShader.SetFloat("material.emissionShift", 0.0f);
+
 
 		//mainShader.SetInt("uTexture", 0);
 		//mainShader.SetInt("uTexture2", 1);
@@ -210,12 +228,26 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 
 		mainShader.Use();
-		mainShader.SetVec3("light.position", lightPos);
-		mainShader.SetVec3("viewPos", mainCamera.GetCameraPosition());
 
-		mainShader.SetVec3("light.ambient", { 0.2f, 0.2f, 0.2f });
-		mainShader.SetVec3("light.diffuse", { 0.5f, 0.5f, 0.5f });
-		mainShader.SetVec3("light.specular", { 1.0f, 1.0f, 1.0f });
+		mainShader.SetVec3("light.position", lightPos);
+		mainShader.SetVec3("light.position", mainCamera.cameraPos);
+		mainShader.SetVec3("light.direction", mainCamera.cameraFront);
+
+		//mainShader.SetVec3("light.position", 0.0f, 10.0f, 0.0f);
+		//mainShader.SetVec3("light.direction", 0.0f, -1.0f, 0.0f);
+
+		mainShader.SetFloat("light.cutoff", glm::cos(glm::radians(12.5f)));
+		mainShader.SetFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+		mainShader.SetVec3("viewPos", mainCamera.cameraPos);
+
+		mainShader.SetVec3("light.ambient", 0.1f, 0.1f, 0.1f );
+		mainShader.SetVec3("light.diffuse", 0.8f, 0.8f, 0.8f );
+		mainShader.SetVec3("light.specular", 1.0f, 1.0f, 1.0f );
+
+		// https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
+		mainShader.SetFloat("light.constant", 1.0f);
+		mainShader.SetFloat("light.linear", 0.35f);
+		mainShader.SetFloat("light.quadratic", 0.44f);
 
 		mainShader.SetFloat("material.shininess", 64.0f);
 
@@ -224,10 +256,6 @@ int main()
 		view = mainCamera.Update();
 		mainShader.SetMatrix4("projection", projection);
 		mainShader.SetMatrix4("view", view);
-
-		glm::mat4 model = glm::mat4(1.0f);
-		mainShader.SetMatrix4("model", model);
-		//mainShader.SetVec3("material.diffuse", { sin((float)glfwGetTime() + 6), sin((float)glfwGetTime() + 4), sin((float)glfwGetTime() + 2)});
 		
 		// bind diffuse tex
 		glActiveTexture(GL_TEXTURE0);
@@ -239,26 +267,36 @@ int main()
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, mainEmissionTexture);
 
+		const float shift = fmodf(glfwGetTime(), TWO_PI);
+		mainShader.SetFloat("material.emissionShift", shift);
 
-		// render cube object
+		// render cube objects
 		glBindVertexArray(objectVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			mainShader.SetMatrix4("model", model);
+			
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		// render light object
 		lightSourceShader.Use();
 		lightSourceShader.SetMatrix4("projection", projection);
 		lightSourceShader.SetMatrix4("view", view);
 
-		model = glm::mat4(1.0f);
+		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.3f));
 		lightSourceShader.SetMatrix4("model", model);
 
-		lightPos = glm::vec3(sin((float)glfwGetTime() + 6) * 2, sin((float)glfwGetTime() + 4) * 1.5, sin((float)glfwGetTime() + 2));
+		lightPos = glm::vec3(sin((float)glfwGetTime() + 6) * 5, sin((float)glfwGetTime() + 4) * 2.5, (sin((float)glfwGetTime() + 2) * 6));
 
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
 
 		////model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
 		//model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.5f, 1.0f, 0.0f));
@@ -283,7 +321,7 @@ int main()
 		//glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// Call events + swap buffers
-		//glfwSwapInterval(0);
+		glfwSwapInterval(0);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

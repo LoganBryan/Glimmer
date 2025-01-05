@@ -20,17 +20,31 @@ public:
 	void HandleCameraInput(GLFWwindow* window);
 
 	inline const void SetFront(glm::vec3 newFront) { cameraFront = newFront; }
+
+	inline const glm::vec3 GetFront() const { return cameraFront; }
 	inline const glm::mat4 GetViewMatrix() const { return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp); }
 	inline const glm::vec3 GetCameraPosition() const { return cameraPos; }
-private:
-	glm::vec3 up{ 0.0f, 1.0f, 0.0f };
 
+	inline const void RecalculateRightUp()
+	{ 
+		cameraFront = glm::normalize(glm::cross(cameraFront, worldUp));
+		up = glm::normalize(glm::cross(cameraRight, cameraFront));
+	}
+
+	// Temp for now, shouldn't be exposed publicly
 	glm::vec3 cameraPos;
+	glm::vec3 cameraFront;
+
+private:
+	glm::vec3 worldUp;
+	glm::vec3 up;
+
+	//glm::vec3 cameraPos;
 	glm::vec3 cameraTarget;
 	glm::vec3 cameraDirection;
 
 	glm::vec3 cameraRight;
-	glm::vec3 cameraFront;
+	//glm::vec3 cameraFront;
 	glm::vec3 cameraUp;
 
 	// TODO: When counter class is updated, remove these and use that class
