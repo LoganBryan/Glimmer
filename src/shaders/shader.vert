@@ -8,12 +8,17 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform vec3 lightPosition;
+
 out vec3 fragPos;
 out vec3 normal;
 out vec2 texCoord;
 
 void main()
 {
+	// Modelview matrix
+	mat4 mvm = view * model;
+
 	fragPos = vec3(model * vec4(aVertex, 1.0));
 	normal = mat3(transpose(inverse(model))) * aNormal;
 	texCoord = aTexCoord;

@@ -5,6 +5,9 @@ in vec3 normal;
 in vec2 texCoord;
 
 uniform sampler2D diffuseTex;
+uniform samplerCube skybox;
+uniform vec3 cameraPos;
+uniform float reflectionStrength;
 uniform int uIsCurve;
 
 out vec4 fragColor;
@@ -41,5 +44,16 @@ void main()
 
 
 	// Output Tex
-	fragColor = texture(diffuseTex, texCoord);
+	//fragColor = texture(diffuseTex, texCoord);
+
+	// Reflect skybox
+	float ratio = 1.00 / 1.52;
+	vec3 I = normalize(fragPos - cameraPos);
+	vec3 R = refract(I, normalize(normal), ratio);
+
+	vec4 diffuseColor = texture(diffuseTex, texCoord);
+	vec4 reflectColor = texture(skybox, R);
+
+	fragColor = vec4(texture(skybox, R).rgb, 1.0);
+
 }

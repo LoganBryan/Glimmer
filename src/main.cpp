@@ -70,6 +70,51 @@ float vertices[] = {
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 };
 
+float skyboxVertices[] = {
+	// positions          
+	-1.0f,  1.0f, -1.0f,
+	-1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	-1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f
+};
+
 glm::vec3 cubePositions[] = {
 	glm::vec3(0.0f,  0.0f,  0.0f),
 	glm::vec3(2.0f,  5.0f, -15.0f),
@@ -95,6 +140,15 @@ std::vector<glm::vec3> lightPositions = {
 	glm::vec3(2.3f, -3.3f, -4.0f),
 	glm::vec3(-4.0f,  2.0f, -12.0f),
 	glm::vec3(0.0f,  0.0f, -3.0f)
+};
+
+std::vector<std::string> skyboxFaces = {
+	"assets/textures/skybox/right.jpg",
+	"assets/textures/skybox/left.jpg",
+	"assets/textures/skybox/top.jpg",
+	"assets/textures/skybox/bottom.jpg",
+	"assets/textures/skybox/front.jpg",
+	"assets/textures/skybox/back.jpg"
 };
 
 // Todo: Needs moving to it's own class
@@ -408,6 +462,38 @@ void DrawModel(const std::pair<GLuint, std::map<int, GLuint>>& vertAndElementBuf
 	glBindVertexArray(0);
 }
 
+unsigned int GenerateCubemap(std::vector<std::string> faces) 
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nChannels;
+	unsigned char* data;
+
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		data = stbi_load(faces[i].c_str(), &width, &height, &nChannels, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		}
+		else
+		{
+			printf("Cubemap texture failed to load at %s", faces[i].c_str());
+		}
+		stbi_image_free(data);
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
+}
+
 int main()
 {
 	glfwInit();
@@ -445,6 +531,7 @@ int main()
 	Shader mainShader("shaders/shader.vert", "shaders/shader.frag");
 	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
 	Shader outlineShader("shaders/shader.vert", "shaders/singleColor.frag");
+	Shader skyboxShader("shaders/skybox.vert", "shaders/skybox.frag");
 
 	// Object for light source
 	//unsigned int VBO;
@@ -464,9 +551,26 @@ int main()
 	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 	//glBindVertexArray(0);
 
+	// Load skybox textures
+	unsigned int skyboxTexture = GenerateCubemap(skyboxFaces);
+
+	// Skybox object
+	unsigned int skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	skyboxShader.Use();
+	skyboxShader.SetInt("skybox", 0);
 
 	// Load gLTF model
 	mainShader.Use();
+	mainShader.SetFloat("reflectionStrength", 1.0f);
+	mainShader.SetInt("skybox", 0);
 	tinygltf::Model exModel = LoadModel(testModel);
 	auto vertElementbuffers = BindModel(exModel);
 
@@ -480,7 +584,12 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
 	glEnable(GL_STENCIL_TEST);
+
+	glDisable(GL_BLEND);
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -522,26 +631,41 @@ int main()
 
 		DrawModel(vertElementbuffers, exModel);
 
+		//// gLTF object -- Scaled
+		//glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		//glStencilMask(0x00);
+		//glDisable(GL_DEPTH_TEST);
 
-		// gLTF object -- Scaled
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		glDisable(GL_DEPTH_TEST);
+		//outlineShader.Use();
 
-		outlineShader.Use();
+		//outlineShader.SetMatrix4("projection", projection);
+		//outlineShader.SetMatrix4("view", view);
 
-		outlineShader.SetMatrix4("projection", projection);
-		outlineShader.SetMatrix4("view", view);
+		////glm::mat4 model = glm::mat4(1.0f);
+		//model = glm::scale(model, glm::vec3(1.1, 1.1, 1.1));
+		//outlineShader.SetMatrix4("model", model);
 
-		//glm::mat4 model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(1.1, 1.1, 1.1));
-		outlineShader.SetMatrix4("model", model);
+		//DrawModel(vertElementbuffers, exModel);
 
-		DrawModel(vertElementbuffers, exModel);
+		//glStencilMask(0xFF);
+		//glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		//glEnable(GL_DEPTH_TEST);
 
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glEnable(GL_DEPTH_TEST);
+		// Skybox - Drawn last
+		glDepthFunc(GL_LEQUAL);
+		skyboxShader.Use();
+		view = glm::mat4(glm::mat3(mainCamera.GetViewMatrix()));
+
+		skyboxShader.SetMatrix4("view", view);
+		skyboxShader.SetMatrix4("projection", projection);
+
+		// Draw skybox cube
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS);
 
 		// Light object
 		//lightSourceShader.Use();
@@ -570,6 +694,8 @@ int main()
 
 	// Deallocate
 	glDeleteVertexArrays(1, &vertElementbuffers.first);
+	glDeleteVertexArrays(1, &skyboxVAO);
+	glDeleteBuffers(1, &skyboxVBO);
 	//glDeleteVertexArrays(1, &lightVAO);
 	//glDeleteBuffers(1, &VBO);
 	mainShader.Delete();
