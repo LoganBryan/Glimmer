@@ -111,8 +111,8 @@ void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLenum id, GLenum se
 
 GLenum polyMode = GL_FILL;
 
-int width = 1920;
-int height = 1080;
+int width = 800;
+int height = 600;
 int nChannels;
 
 unsigned int textureOne, textureTwo;
@@ -441,9 +441,31 @@ int main()
 	glfwSetCursorPosCallback(window, MouseCallback);
 	glfwSetScrollCallback(window, ScrollCallback);
 
-	// Setup shader
+	// Setup shaders
 	Shader mainShader("shaders/shader.vert", "shaders/shader.frag");
+	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
+	Shader outlineShader("shaders/shader.vert", "shaders/singleColor.frag");
 
+	// Object for light source
+	//unsigned int VBO;
+	//glGenBuffers(1, &VBO);
+
+	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	//unsigned int lightVAO;
+	//glGenVertexArrays(1, &lightVAO);
+	//glBindVertexArray(lightVAO);
+
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	//glEnableVertexAttribArray(0);
+
+	//// Unbind
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glBindVertexArray(0);
+
+
+	// Load gLTF model
 	mainShader.Use();
 	tinygltf::Model exModel = LoadModel(testModel);
 	auto vertElementbuffers = BindModel(exModel);
@@ -456,6 +478,9 @@ int main()
 
 	FPSCounter fpsCounter;
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	glEnable(GL_STENCIL_TEST);
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -471,24 +496,71 @@ int main()
 
 		// Render
 		glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glStencilFunc(GL_EQUAL, 1, 0xFF);
+		glClearColor(0.25f, 0.25f, 0.8f, 1.0f);
+
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 
-		mainShader.Use();
-
 		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
-		glm::mat4 view = mainCamera.GetViewMatrix();
-		view = mainCamera.Update();
+		glm::mat4 view = mainCamera.Update();
+		glm::mat4 model = glm::mat4(1.0f);
+
+		// gLTF object
+		mainShader.Use();
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
+		glStencilMask(0xFF); // Enable writing to stencil buffer
+
 		mainShader.SetMatrix4("projection", projection);
 		mainShader.SetMatrix4("view", view);
 
-		glm::mat4 model = glm::mat4(1.0f);
+		//glm::mat4 model = glm::mat4(1.0f);
 		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		mainShader.SetMatrix4("model", model);
 
-		// Render gLTF object
 		DrawModel(vertElementbuffers, exModel);
+
+
+		// gLTF object -- Scaled
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00);
+		glDisable(GL_DEPTH_TEST);
+
+		outlineShader.Use();
+
+		outlineShader.SetMatrix4("projection", projection);
+		outlineShader.SetMatrix4("view", view);
+
+		//glm::mat4 model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(1.1, 1.1, 1.1));
+		outlineShader.SetMatrix4("model", model);
+
+		DrawModel(vertElementbuffers, exModel);
+
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
+
+		// Light object
+		//lightSourceShader.Use();
+		//lightSourceShader.SetMatrix4("projection", projection);
+		//lightSourceShader.SetMatrix4("view", view);
+
+		//glBindVertexArray(lightVAO);
+
+		////TODO: Should eventually be changed to allow adding/ removing pointlights, but this should be simple to change		
+
+		//model = glm::translate(model, lightPositions[0]);
+		//model = glm::scale(model, glm::vec3(0.3f));
+		//lightSourceShader.SetMatrix4("model", model);
+
+		//lightPositions[0].x = sin((float)glfwGetTime() + 6) * staticLightPositions[0].x * 2.5;
+		//lightPositions[0].y = sin((float)glfwGetTime() + 4) * staticLightPositions[0].y * 6;
+		//lightPositions[0].z = sin((float)glfwGetTime() + 2);
+
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// Call events + swap buffers
 		glfwSwapInterval(0);
@@ -498,238 +570,13 @@ int main()
 
 	// Deallocate
 	glDeleteVertexArrays(1, &vertElementbuffers.first);
+	//glDeleteVertexArrays(1, &lightVAO);
+	//glDeleteBuffers(1, &VBO);
 	mainShader.Delete();
 
 	glfwTerminate();
 	return 0;
 }
-
-//int main()
-//{
-//	glfwInit();
-//	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-//	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-//	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-//
-//	// Create window context
-//	GLFWwindow* window = glfwCreateWindow(width, height, "Glimmer", NULL, NULL);
-//	if (window == NULL)
-//	{
-//		printf("Failed to create window!");
-//		glfwTerminate();
-//		return -1;
-//	}
-//	glfwMakeContextCurrent(window);
-//	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-//
-//	// Initialize OGL Context
-//	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-//	{
-//		printf("Failed to initialize GLAD!");
-//		return -1;
-//	}
-//	
-//	//glViewport(0, 0, 800, 600);
-//	std::cout << "ver: " << glGetString(GL_VERSION) << std::endl;
-//
-//	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-//	glfwSetKeyCallback(window, KeyCallback);
-//	glfwSetCursorPosCallback(window, MouseCallback);
-//	glfwSetScrollCallback(window, ScrollCallback);
-//
-//	// Debug output
-//	//glEnable(GL_DEBUG_OUTPUT);
-//	//glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-//	//glDebugMessageCallback(MessageCallback, nullptr);
-//
-//	//Shader mainShader("shaders/light.vert", "shaders/multiLight.frag");
-//	Shader mainShader("shaders/shader.vert", "shaders/shader.frag");
-//	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
-//
-//	// Vertex Array Object, Vertex Buffer Object
-//	unsigned int objectVAO, VBO;
-//	glGenVertexArrays(1, &objectVAO);
-//	glGenBuffers(1, &VBO);
-//
-//	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-//	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-//
-//	glBindVertexArray(objectVAO);
-//
-//	// Interpret vertex data, 3 * float as we have 3 * 4 byte values for position
-//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Pos
-//	glEnableVertexAttribArray(0);
-//
-//	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // normal
-//	glEnableVertexAttribArray(1);
-//
-//	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // tex
-//	glEnableVertexAttribArray(2);
-//
-//	// Object for light source
-//	unsigned int lightVAO;
-//	glGenVertexArrays(1, &lightVAO);
-//	glBindVertexArray(lightVAO);
-//
-//	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-//
-//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-//	glEnableVertexAttribArray(0);
-//
-//	// Unbind
-//	glBindBuffer(GL_ARRAY_BUFFER, 0);
-//	glBindVertexArray(0);
-//
-//	// Load textures
-//	unsigned int mainDiffTexture = LoadTexture(imagePath.c_str());
-//	unsigned int mainSpecularTexture = LoadTexture(image2Path.c_str());
-//	unsigned int mainEmissionTexture = LoadTexture(image3Path.c_str());
-//	
-//	mainShader.Use();
-//	tinygltf::Model exModel = LoadModel(testModel);
-//	auto vertElementbuffers = BindModel(exModel);
-//
-//	//SetupMeshState(exModel, mainShader.GetID());
-//	//CheckError("Setup State");
-//
-//	printf("Number of meshes: %zu\n", exModel.meshes.size());
-//	for (size_t i = 0; i < exModel.meshes.size(); ++i)
-//	{
-//		printf("Mesh %zu: %s\n", i, exModel.meshes[i].name.c_str());
-//	}
-//
-//	mainShader.SetInt("material.diffuse", 0);
-//	mainShader.SetInt("material.specular", 1);
-//	mainShader.SetInt("material.emission", 2);
-//	mainShader.SetFloat("material.shininess", 64.0f);
-//	mainShader.SetFloat("material.emissionShift", 0.0f);
-//
-//	FPSCounter fpsCounter;
-//	glEnable(GL_DEPTH_TEST);
-//
-//	// Main loop
-//	while (!glfwWindowShouldClose(window))
-//	{
-//		// Input process
-//		ProcessInput(window);
-//		mainCamera.HandleCameraInput(window);
-//
-//		fpsCounter.Update();
-//		std::stringstream windowTitle;
-//		windowTitle << "Glimmer [ " << fpsCounter.GetFPS() << " fps ]";
-//		glfwSetWindowTitle(window, windowTitle.str().c_str());
-//
-//		// Render
-//		glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//
-//		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
-//
-//		mainShader.Use();
-//
-//		mainShader.SetVec3("viewPos", mainCamera.cameraPos);
-//
-//		// Directional Light
-//		mainShader.SetVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
-//		mainShader.SetVec3("directionalLight.ambient", 0.05f, 0.05f, 0.05f);
-//		mainShader.SetVec3("directionalLight.diffuse", 0.4f, 0.4f, 0.4f);
-//		mainShader.SetVec3("directionalLight.specular", 0.5f, 0.5f, 0.5f);
-//
-//		// Point Lights
-//		for (int i = 0; i < lightPositions.size(); i++)
-//		{
-//			auto glslLight = std::format("pointLights[{}].", i);
-//			std::string out = glslLight + "position";
-//			mainShader.SetVec3(glslLight + "position", lightPositions[i]);
-//			mainShader.SetVec3(glslLight + "ambient", 0.05f, 0.05f, 0.05f);
-//			mainShader.SetVec3(glslLight + "diffuse", 0.8f, 0.8f, 0.8f);
-//			mainShader.SetVec3(glslLight + "specular", 1.0f, 1.0f, 1.0f);
-//
-//			// https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
-//			mainShader.SetFloat(glslLight + "constant", 1.0f);
-//			mainShader.SetFloat(glslLight + "linear", 0.35f);
-//			mainShader.SetFloat(glslLight + "quadratic", 0.44f);
-//		}
-//
-//		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
-//		glm::mat4 view = mainCamera.GetViewMatrix();
-//		view = mainCamera.Update();
-//		mainShader.SetMatrix4("projection", projection);
-//		mainShader.SetMatrix4("view", view);
-//		
-//		//// bind diffuse tex
-//		//glActiveTexture(GL_TEXTURE0);
-//		//glBindTexture(GL_TEXTURE_2D, mainDiffTexture);
-//		//// bind specular tex
-//		//glActiveTexture(GL_TEXTURE1);
-//		//glBindTexture(GL_TEXTURE_2D, mainSpecularTexture);
-//		//// bind emission tex
-//		//glActiveTexture(GL_TEXTURE2);
-//		//glBindTexture(GL_TEXTURE_2D, mainEmissionTexture);
-//
-//		const float shift = fmodf(glfwGetTime(), TWO_PI);
-//		mainShader.SetFloat("material.emissionShift", shift);
-//
-//		// Render gLTF object
-//		glUniform1i(glGetUniformLocation(mainShader.GetID(), "diffuseTex"), 0);
-//		DrawModel(vertElementbuffers, exModel);
-//
-//		// render cube objects
-//		glBindVertexArray(objectVAO);
-//		//for (unsigned int i = 0; i < 10; i++)
-//		//{
-//		//	glm::mat4 model = glm::mat4(1.0f);
-//		//	model = glm::translate(model, cubePositions[i]);
-//		//	float angle = 20.0f * i;
-//		//	//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-//		//	mainShader.SetMatrix4("model", model);
-//		//	
-//		//	glDrawArrays(GL_TRIANGLES, 0, 36);
-//		//}
-//
-//		// render light object
-//		lightSourceShader.Use();
-//		lightSourceShader.SetMatrix4("projection", projection);
-//		lightSourceShader.SetMatrix4("view", view);
-//
-//		glBindVertexArray(lightVAO);
-//
-//		//TODO: Should eventually be changed to allow adding/ removing pointlights, right now the shader has it's own value for how many lights it has.. but this should be simple to change
-//		for (unsigned int i = 0; i < lightPositions.size(); i++)
-//		{
-//			glm::mat4 model = glm::mat4(1.0f);
-//			model = glm::translate(model, lightPositions[i]);
-//			model = glm::scale(model, glm::vec3(0.3f));
-//			lightSourceShader.SetMatrix4("model", model);
-//
-//			lightPositions[i].x = sin((float)glfwGetTime() + 6) * staticLightPositions[i].x * 1.5;
-//			lightPositions[i].y = sin((float)glfwGetTime() + 4) * staticLightPositions[i].y * 1.5;
-//			lightPositions[i].z = sin((float)glfwGetTime() + 2) * staticLightPositions[i].z * 1.5;
-//			//lightPositions[i].y += sin((float)glfwGetTime() + 4) * 5;
-//			//lightPositions[i].z = sin((float)glfwGetTime() + 2) * 5;
-//
-//			glDrawArrays(GL_TRIANGLES, 0, 36);
-//		}
-//
-//		//DrawModel(exModel, mainShader.GetID());
-//
-//		// Call events + swap buffers
-//		glfwSwapInterval(0);
-//		glfwSwapBuffers(window);
-//		glfwPollEvents();
-//	}
-//
-//	// Deallocate resources
-//	glDeleteVertexArrays(1, &vertElementbuffers.first);
-//
-//	glDeleteVertexArrays(1, &objectVAO);
-//	glDeleteVertexArrays(1, &lightVAO);
-//	glDeleteBuffers(1, &VBO);
-//	mainShader.Delete();
-//
-//	glfwTerminate();
-//	return 0;
-//}
 
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
