@@ -1,5 +1,11 @@
+#define TINYGLTF_IMPLEMENTATION
+
 #include <stdio.h>
 #include <string>
+#include <sstream>
+#include <format>
+#include <vector>
+#include <map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -7,17 +13,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <sstream>
-#include <format>
-#include <vector>
+#include "stb_image.h"
+#include "tiny_gltf.h"
 
 #include "Shader.h"
 #include "Camera.h"
 #include "FPSCounter.h"
-#include "stb_image.h"
 
 #define PI 3.14159265358979323846
 #define TWO_PI 6.2831855
+#define BUFFER_OFFSET(i) ((char*)NULL + (i))
 
 // TEMP
 float vertices[] = {
@@ -106,14 +111,16 @@ void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLenum id, GLenum se
 
 GLenum polyMode = GL_FILL;
 
-int width = 800;
-int height = 600;
+int width = 1920;
+int height = 1080;
 int nChannels;
 
 unsigned int textureOne, textureTwo;
 std::string imagePath = "assets/textures/boxTex.png";
 std::string image2Path = "assets/textures/boxSpecular.png";
 std::string image3Path = "assets/textures/boxEmission.png";
+
+std::string testModel = "assets/models/helmet/DamagedHelmet.gltf";
 
 bool firstMouseInput = true;
 float lastMouseX = 400, lastMouseY = 400;
@@ -124,6 +131,282 @@ float fov = 90.0f;
 Camera mainCamera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+static std::string GetFilePathExtension(const std::string& fileName)
+{
+	if (fileName.find_last_of(".") != std::string::npos)
+	{
+		return fileName.substr(fileName.find_last_of(".") + 1);
+	}
+	return "";
+}
+
+static void PrintNodes(const tinygltf::Scene& scene)
+{
+	for (size_t i = 0; i < scene.nodes.size(); i++)
+	{
+		printf("node: %d\n\n", scene.nodes[i]);
+	}
+}
+
+static void CheckError(std::string descript)
+{
+	GLenum err = glGetError();
+
+	if (err != GL_NO_ERROR)
+	{
+		printf("OGL Error %s: %d (%d)", descript.c_str(), err, err);
+		throw; // lol 
+	}
+}
+
+tinygltf::Model LoadModel(std::string path)
+{
+	tinygltf::Model model;
+	tinygltf::TinyGLTF loader;
+	std::string err;
+	std::string warn;
+
+	std::string exten = GetFilePathExtension(path);
+
+	bool ret = false;
+	if (exten.compare("glb") == 0)
+	{
+		// Binary
+		ret = loader.LoadBinaryFromFile(&model, &err, &warn, path);
+	}
+	else
+	{
+		// ASCII
+		ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+	}
+
+	if (!warn.empty())
+	{
+		printf("gLTF Warn: %s\n", warn.c_str());
+	}
+
+	if (!err.empty())
+	{
+		printf("gLTF Error: %s\n", err.c_str());
+	}
+
+	if (!ret)
+	{
+		printf("Failed to parse gLTF!\n");
+	}
+
+	printf("Success!\n Model loaded: %s\n", path.c_str());
+
+	PrintNodes(model.scenes[model.defaultScene > -1 ? model.defaultScene : 0]);
+
+	return model;
+}
+
+void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mesh& mesh)
+{
+	for (size_t i = 0; i < model.bufferViews.size(); i++)
+	{
+		const tinygltf::BufferView& bufferView = model.bufferViews[i];
+
+		if (bufferView.target == 0)
+		{
+			printf("WARNING! Buffer View target is zero!\n Unsupported bufferView"); // spec2.0
+			continue;
+		}
+
+		const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+		printf("Buffer view target, %d\n", bufferView.target);
+
+		GLuint vbo;
+		glGenBuffers(1, &vbo);
+		vbos[i] = vbo;
+		glBindBuffer(bufferView.target, vbo);
+
+		printf("Buffer size: %zu \n Buffer View offset: %zu\n", buffer.data.size(), bufferView.byteOffset);
+		glBufferData(bufferView.target, bufferView.byteLength, &buffer.data.at(0) + bufferView.byteOffset, GL_STATIC_DRAW);
+
+		for (size_t i = 0; i < mesh.primitives.size(); i++)
+		{
+			tinygltf::Primitive primitve = mesh.primitives[i];
+			tinygltf::Accessor indAccessor = model.accessors[primitve.indices];
+
+			for (auto& attr : primitve.attributes)
+			{
+				tinygltf::Accessor accessor = model.accessors[attr.second];
+				int bStride = accessor.ByteStride(model.bufferViews[accessor.bufferView]);
+
+				glBindBuffer(GL_ARRAY_BUFFER, vbos[accessor.bufferView]);
+
+				int size = 1;
+				if (accessor.type != TINYGLTF_TYPE_SCALAR)
+				{
+					size = accessor.type;
+				}
+
+				int vertAArray = -1;
+				if (attr.first.compare("POSITION") == 0)
+				{
+					vertAArray = 0;
+				}
+				if (attr.first.compare("NORMAL") == 0)
+				{
+					vertAArray = 1;
+				}
+				if (attr.first.compare("TEXCOORD_0") == 0)
+				{
+					vertAArray = 2;
+				}
+
+				if (vertAArray > -1)
+				{
+					glEnableVertexAttribArray(vertAArray);
+					glVertexAttribPointer(vertAArray, size, accessor.componentType, accessor.normalized ? GL_TRUE : GL_FALSE, bStride, BUFFER_OFFSET(accessor.byteOffset));
+				}
+				else
+				{
+					printf("WARNING!\n Vertex Attribute Array missing! %s\n", attr.first.c_str());
+				}
+			}
+
+			if (model.textures.size() > 0)
+			{
+				tinygltf::Texture& texture = model.textures[0];
+
+				if (texture.source > -1)
+				{
+					GLuint textureID;
+					glGenTextures(1, &textureID);
+
+					tinygltf::Image& image = model.images[texture.source];
+
+					glBindTexture(GL_TEXTURE_2D, textureID);
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+					GLenum textureFormat = GL_RGBA;
+
+					if (image.component == 1)
+					{
+						textureFormat = GL_RED;
+					}
+					else if (image.component == 2)
+					{
+						textureFormat = GL_RG;
+					}
+					else if (image.component == 3)
+					{
+						textureFormat = GL_RGB;
+					}
+
+					GLenum imageType = GL_UNSIGNED_BYTE;
+					if (image.bits == 16) // Don't need to change if 8 bit
+					{
+						imageType == GL_UNSIGNED_SHORT;
+					}
+
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, textureFormat, imageType, &image.image.at(0));
+
+					// Bind texture ID to shader texture unit
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_2D, textureID);
+				}
+			}
+		}
+	}
+}
+
+void BindModelNodes(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Node& node)
+{
+	if ((node.mesh >= 0) && (node.mesh < model.meshes.size()))
+	{
+		BindMesh(vbos, model, model.meshes[node.mesh]);
+	}
+
+	for (size_t i = 0; i < node.children.size(); i++)
+	{
+		assert((node.children[i] >= 0) && (node.children[i] < model.nodes.size()));
+		BindModelNodes(vbos, model, model.nodes[node.children[i]]);
+	}
+}
+
+std::pair<GLuint, std::map<int, GLuint>> BindModel(tinygltf::Model& model)
+{
+	std::map<int, GLuint> vbos;
+	GLuint vao;
+	
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	const tinygltf::Scene& scene = model.scenes[model.defaultScene];
+	for (size_t i = 0; i < scene.nodes.size(); i++)
+	{
+		assert((scene.nodes[i] >= 0) && (scene.nodes[i] < model.nodes.size()));
+		BindModelNodes(vbos, model, model.nodes[scene.nodes[i]]);
+	}
+
+	glBindVertexArray(0);
+
+	// Cleanup vbo, delete index buffer later
+	for (auto it = vbos.cbegin(); it != vbos.cend();)
+	{
+		tinygltf::BufferView bufferView = model.bufferViews[it->first];
+		if (bufferView.target != GL_ELEMENT_ARRAY_BUFFER)
+		{
+			glDeleteBuffers(1, &vbos[it->first]);
+			vbos.erase(it++);
+		}
+		else
+		{
+			it++;
+		}
+	}
+
+	return std::make_pair(vao, vbos);
+}
+
+void DrawMesh(const std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mesh& mesh)
+{
+	for (size_t i = 0; i < mesh.primitives.size(); i++)
+	{
+		tinygltf::Primitive prim = mesh.primitives[i];
+		tinygltf::Accessor indAccessor = model.accessors[prim.indices];
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos.at(indAccessor.bufferView));
+
+		glDrawElements(prim.mode, indAccessor.count, indAccessor.componentType, BUFFER_OFFSET(indAccessor.byteOffset));
+	}
+}
+
+void DrawModelNodes(const std::pair<GLuint, std::map<int, GLuint>>& vertAndElementBuffers, tinygltf::Model& model, tinygltf::Node& node)
+{
+	if ((node.mesh >= 0) && (node.mesh < model.meshes.size()))
+	{
+		DrawMesh(vertAndElementBuffers.second, model, model.meshes[node.mesh]);
+	}
+
+	// Recursively draw child nodes
+	for (size_t i = 0; i < node.children.size(); i++)
+	{
+		DrawModelNodes(vertAndElementBuffers, model, model.nodes[node.children[i]]);
+	}
+}
+
+void DrawModel(const std::pair<GLuint, std::map<int, GLuint>>& vertAndElementBuffers, tinygltf::Model& model)
+{
+	glBindVertexArray(vertAndElementBuffers.first);
+
+	const tinygltf::Scene& scene = model.scenes[model.defaultScene];
+	for (size_t i = 0; i < scene.nodes.size(); i++)
+	{
+		DrawModelNodes(vertAndElementBuffers, model, model.nodes[scene.nodes[i]]);
+	}
+
+	glBindVertexArray(0);
+}
 
 int main()
 {
@@ -149,66 +432,27 @@ int main()
 		printf("Failed to initialize GLAD!");
 		return -1;
 	}
-
+	
 	//glViewport(0, 0, 800, 600);
+	std::cout << "ver: " << glGetString(GL_VERSION) << std::endl;
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetCursorPosCallback(window, MouseCallback);
 	glfwSetScrollCallback(window, ScrollCallback);
 
-	glEnable(GL_DEBUG_OUTPUT);
-	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	glDebugMessageCallback(MessageCallback, nullptr);
+	// Setup shader
+	Shader mainShader("shaders/shader.vert", "shaders/shader.frag");
 
-	Shader mainShader("shaders/light.vert", "shaders/multiLight.frag");
-	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
-
-	// Vertex Array Object, Vertex Buffer Object
-	unsigned int objectVAO, VBO;
-	glGenVertexArrays(1, &objectVAO);
-	glGenBuffers(1, &VBO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glBindVertexArray(objectVAO);
-
-	// Interpret vertex data, 3 * float as we have 3 * 4 byte values for position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Pos
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // normal
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // tex
-	glEnableVertexAttribArray(2);
-
-	// Object for light source
-	unsigned int lightVAO;
-	glGenVertexArrays(1, &lightVAO);
-	glBindVertexArray(lightVAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	// Unbind
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	// Load textures
-	unsigned int mainDiffTexture = LoadTexture(imagePath.c_str());
-	unsigned int mainSpecularTexture = LoadTexture(image2Path.c_str());
-	unsigned int mainEmissionTexture = LoadTexture(image3Path.c_str());
-	
 	mainShader.Use();
-	mainShader.SetInt("material.diffuse", 0);
-	mainShader.SetInt("material.specular", 1);
-	mainShader.SetInt("material.emission", 2);
-	mainShader.SetFloat("material.shininess", 64.0f);
-	mainShader.SetFloat("material.emissionShift", 0.0f);
+	tinygltf::Model exModel = LoadModel(testModel);
+	auto vertElementbuffers = BindModel(exModel);
+
+	printf("Number of meshes: %zu\n", exModel.meshes.size());
+	for (size_t i = 0; i < exModel.meshes.size(); ++i)
+	{
+		printf("Mesh %zu: %s\n", i, exModel.meshes[i].name.c_str());
+	}
 
 	FPSCounter fpsCounter;
 	glEnable(GL_DEPTH_TEST);
@@ -232,85 +476,19 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
 
 		mainShader.Use();
-		mainShader.SetVec3("viewPos", mainCamera.cameraPos);
-
-		// Directional Light
-		mainShader.SetVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
-		mainShader.SetVec3("directionalLight.ambient", 0.05f, 0.05f, 0.05f);
-		mainShader.SetVec3("directionalLight.diffuse", 0.4f, 0.4f, 0.4f);
-		mainShader.SetVec3("directionalLight.specular", 0.5f, 0.5f, 0.5f);
-
-		// Point Lights
-		for (int i = 0; i < lightPositions.size(); i++)
-		{
-			auto glslLight = std::format("pointLights[{}].", i);
-			std::string out = glslLight + "position";
-			mainShader.SetVec3(glslLight + "position", lightPositions[i]);
-			mainShader.SetVec3(glslLight + "ambient", 0.05f, 0.05f, 0.05f);
-			mainShader.SetVec3(glslLight + "diffuse", 0.8f, 0.8f, 0.8f);
-			mainShader.SetVec3(glslLight + "specular", 1.0f, 1.0f, 1.0f);
-
-			// https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
-			mainShader.SetFloat(glslLight + "constant", 1.0f);
-			mainShader.SetFloat(glslLight + "linear", 0.35f);
-			mainShader.SetFloat(glslLight + "quadratic", 0.44f);
-		}
 
 		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
 		glm::mat4 view = mainCamera.GetViewMatrix();
 		view = mainCamera.Update();
 		mainShader.SetMatrix4("projection", projection);
 		mainShader.SetMatrix4("view", view);
-		
-		// bind diffuse tex
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, mainDiffTexture);
-		// bind specular tex
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, mainSpecularTexture);
-		// bind emission tex
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, mainEmissionTexture);
 
-		const float shift = fmodf(glfwGetTime(), TWO_PI);
-		mainShader.SetFloat("material.emissionShift", shift);
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		mainShader.SetMatrix4("model", model);
 
-		// render cube objects
-		glBindVertexArray(objectVAO);
-		for (unsigned int i = 0; i < 10; i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cubePositions[i]);
-			float angle = 20.0f * i;
-			//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			mainShader.SetMatrix4("model", model);
-			
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-
-		// render light object
-		lightSourceShader.Use();
-		lightSourceShader.SetMatrix4("projection", projection);
-		lightSourceShader.SetMatrix4("view", view);
-
-		glBindVertexArray(lightVAO);
-
-		//TODO: Should eventually be changed to allow adding/ removing pointlights, right now the shader has it's own value for how many lights it has.. but this should be simple to change
-		for (unsigned int i = 0; i < lightPositions.size(); i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, lightPositions[i]);
-			model = glm::scale(model, glm::vec3(0.3f));
-			lightSourceShader.SetMatrix4("model", model);
-
-			lightPositions[i].x = sin((float)glfwGetTime() + 6) * staticLightPositions[i].x * 1.5;
-			lightPositions[i].y = sin((float)glfwGetTime() + 4) * staticLightPositions[i].y * 1.5;
-			lightPositions[i].z = sin((float)glfwGetTime() + 2) * staticLightPositions[i].z * 1.5;
-			//lightPositions[i].y += sin((float)glfwGetTime() + 4) * 5;
-			//lightPositions[i].z = sin((float)glfwGetTime() + 2) * 5;
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
+		// Render gLTF object
+		DrawModel(vertElementbuffers, exModel);
 
 		// Call events + swap buffers
 		glfwSwapInterval(0);
@@ -318,15 +496,240 @@ int main()
 		glfwPollEvents();
 	}
 
-	// Deallocate resources
-	glDeleteVertexArrays(1, &objectVAO);
-	glDeleteVertexArrays(1, &lightVAO);
-	glDeleteBuffers(1, &VBO);
+	// Deallocate
+	glDeleteVertexArrays(1, &vertElementbuffers.first);
 	mainShader.Delete();
 
 	glfwTerminate();
 	return 0;
 }
+
+//int main()
+//{
+//	glfwInit();
+//	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+//	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+//	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+//
+//	// Create window context
+//	GLFWwindow* window = glfwCreateWindow(width, height, "Glimmer", NULL, NULL);
+//	if (window == NULL)
+//	{
+//		printf("Failed to create window!");
+//		glfwTerminate();
+//		return -1;
+//	}
+//	glfwMakeContextCurrent(window);
+//	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+//
+//	// Initialize OGL Context
+//	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+//	{
+//		printf("Failed to initialize GLAD!");
+//		return -1;
+//	}
+//	
+//	//glViewport(0, 0, 800, 600);
+//	std::cout << "ver: " << glGetString(GL_VERSION) << std::endl;
+//
+//	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+//	glfwSetKeyCallback(window, KeyCallback);
+//	glfwSetCursorPosCallback(window, MouseCallback);
+//	glfwSetScrollCallback(window, ScrollCallback);
+//
+//	// Debug output
+//	//glEnable(GL_DEBUG_OUTPUT);
+//	//glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+//	//glDebugMessageCallback(MessageCallback, nullptr);
+//
+//	//Shader mainShader("shaders/light.vert", "shaders/multiLight.frag");
+//	Shader mainShader("shaders/shader.vert", "shaders/shader.frag");
+//	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
+//
+//	// Vertex Array Object, Vertex Buffer Object
+//	unsigned int objectVAO, VBO;
+//	glGenVertexArrays(1, &objectVAO);
+//	glGenBuffers(1, &VBO);
+//
+//	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+//
+//	glBindVertexArray(objectVAO);
+//
+//	// Interpret vertex data, 3 * float as we have 3 * 4 byte values for position
+//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Pos
+//	glEnableVertexAttribArray(0);
+//
+//	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // normal
+//	glEnableVertexAttribArray(1);
+//
+//	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // tex
+//	glEnableVertexAttribArray(2);
+//
+//	// Object for light source
+//	unsigned int lightVAO;
+//	glGenVertexArrays(1, &lightVAO);
+//	glBindVertexArray(lightVAO);
+//
+//	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//
+//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+//	glEnableVertexAttribArray(0);
+//
+//	// Unbind
+//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+//	glBindVertexArray(0);
+//
+//	// Load textures
+//	unsigned int mainDiffTexture = LoadTexture(imagePath.c_str());
+//	unsigned int mainSpecularTexture = LoadTexture(image2Path.c_str());
+//	unsigned int mainEmissionTexture = LoadTexture(image3Path.c_str());
+//	
+//	mainShader.Use();
+//	tinygltf::Model exModel = LoadModel(testModel);
+//	auto vertElementbuffers = BindModel(exModel);
+//
+//	//SetupMeshState(exModel, mainShader.GetID());
+//	//CheckError("Setup State");
+//
+//	printf("Number of meshes: %zu\n", exModel.meshes.size());
+//	for (size_t i = 0; i < exModel.meshes.size(); ++i)
+//	{
+//		printf("Mesh %zu: %s\n", i, exModel.meshes[i].name.c_str());
+//	}
+//
+//	mainShader.SetInt("material.diffuse", 0);
+//	mainShader.SetInt("material.specular", 1);
+//	mainShader.SetInt("material.emission", 2);
+//	mainShader.SetFloat("material.shininess", 64.0f);
+//	mainShader.SetFloat("material.emissionShift", 0.0f);
+//
+//	FPSCounter fpsCounter;
+//	glEnable(GL_DEPTH_TEST);
+//
+//	// Main loop
+//	while (!glfwWindowShouldClose(window))
+//	{
+//		// Input process
+//		ProcessInput(window);
+//		mainCamera.HandleCameraInput(window);
+//
+//		fpsCounter.Update();
+//		std::stringstream windowTitle;
+//		windowTitle << "Glimmer [ " << fpsCounter.GetFPS() << " fps ]";
+//		glfwSetWindowTitle(window, windowTitle.str().c_str());
+//
+//		// Render
+//		glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
+//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//
+//		glPolygonMode(GL_FRONT_AND_BACK, polyMode);
+//
+//		mainShader.Use();
+//
+//		mainShader.SetVec3("viewPos", mainCamera.cameraPos);
+//
+//		// Directional Light
+//		mainShader.SetVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
+//		mainShader.SetVec3("directionalLight.ambient", 0.05f, 0.05f, 0.05f);
+//		mainShader.SetVec3("directionalLight.diffuse", 0.4f, 0.4f, 0.4f);
+//		mainShader.SetVec3("directionalLight.specular", 0.5f, 0.5f, 0.5f);
+//
+//		// Point Lights
+//		for (int i = 0; i < lightPositions.size(); i++)
+//		{
+//			auto glslLight = std::format("pointLights[{}].", i);
+//			std::string out = glslLight + "position";
+//			mainShader.SetVec3(glslLight + "position", lightPositions[i]);
+//			mainShader.SetVec3(glslLight + "ambient", 0.05f, 0.05f, 0.05f);
+//			mainShader.SetVec3(glslLight + "diffuse", 0.8f, 0.8f, 0.8f);
+//			mainShader.SetVec3(glslLight + "specular", 1.0f, 1.0f, 1.0f);
+//
+//			// https://wiki.ogre3d.org/tiki-index.php?page=-Point+Light+Attenuation
+//			mainShader.SetFloat(glslLight + "constant", 1.0f);
+//			mainShader.SetFloat(glslLight + "linear", 0.35f);
+//			mainShader.SetFloat(glslLight + "quadratic", 0.44f);
+//		}
+//
+//		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
+//		glm::mat4 view = mainCamera.GetViewMatrix();
+//		view = mainCamera.Update();
+//		mainShader.SetMatrix4("projection", projection);
+//		mainShader.SetMatrix4("view", view);
+//		
+//		//// bind diffuse tex
+//		//glActiveTexture(GL_TEXTURE0);
+//		//glBindTexture(GL_TEXTURE_2D, mainDiffTexture);
+//		//// bind specular tex
+//		//glActiveTexture(GL_TEXTURE1);
+//		//glBindTexture(GL_TEXTURE_2D, mainSpecularTexture);
+//		//// bind emission tex
+//		//glActiveTexture(GL_TEXTURE2);
+//		//glBindTexture(GL_TEXTURE_2D, mainEmissionTexture);
+//
+//		const float shift = fmodf(glfwGetTime(), TWO_PI);
+//		mainShader.SetFloat("material.emissionShift", shift);
+//
+//		// Render gLTF object
+//		glUniform1i(glGetUniformLocation(mainShader.GetID(), "diffuseTex"), 0);
+//		DrawModel(vertElementbuffers, exModel);
+//
+//		// render cube objects
+//		glBindVertexArray(objectVAO);
+//		//for (unsigned int i = 0; i < 10; i++)
+//		//{
+//		//	glm::mat4 model = glm::mat4(1.0f);
+//		//	model = glm::translate(model, cubePositions[i]);
+//		//	float angle = 20.0f * i;
+//		//	//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+//		//	mainShader.SetMatrix4("model", model);
+//		//	
+//		//	glDrawArrays(GL_TRIANGLES, 0, 36);
+//		//}
+//
+//		// render light object
+//		lightSourceShader.Use();
+//		lightSourceShader.SetMatrix4("projection", projection);
+//		lightSourceShader.SetMatrix4("view", view);
+//
+//		glBindVertexArray(lightVAO);
+//
+//		//TODO: Should eventually be changed to allow adding/ removing pointlights, right now the shader has it's own value for how many lights it has.. but this should be simple to change
+//		for (unsigned int i = 0; i < lightPositions.size(); i++)
+//		{
+//			glm::mat4 model = glm::mat4(1.0f);
+//			model = glm::translate(model, lightPositions[i]);
+//			model = glm::scale(model, glm::vec3(0.3f));
+//			lightSourceShader.SetMatrix4("model", model);
+//
+//			lightPositions[i].x = sin((float)glfwGetTime() + 6) * staticLightPositions[i].x * 1.5;
+//			lightPositions[i].y = sin((float)glfwGetTime() + 4) * staticLightPositions[i].y * 1.5;
+//			lightPositions[i].z = sin((float)glfwGetTime() + 2) * staticLightPositions[i].z * 1.5;
+//			//lightPositions[i].y += sin((float)glfwGetTime() + 4) * 5;
+//			//lightPositions[i].z = sin((float)glfwGetTime() + 2) * 5;
+//
+//			glDrawArrays(GL_TRIANGLES, 0, 36);
+//		}
+//
+//		//DrawModel(exModel, mainShader.GetID());
+//
+//		// Call events + swap buffers
+//		glfwSwapInterval(0);
+//		glfwSwapBuffers(window);
+//		glfwPollEvents();
+//	}
+//
+//	// Deallocate resources
+//	glDeleteVertexArrays(1, &vertElementbuffers.first);
+//
+//	glDeleteVertexArrays(1, &objectVAO);
+//	glDeleteVertexArrays(1, &lightVAO);
+//	glDeleteBuffers(1, &VBO);
+//	mainShader.Delete();
+//
+//	glfwTerminate();
+//	return 0;
+//}
 
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {

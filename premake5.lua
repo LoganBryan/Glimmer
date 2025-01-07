@@ -10,10 +10,12 @@ IncludeDirs["GLFW"] = "thirdparty/GLFW/include"
 IncludeDirs["GLAD"] = "thirdparty/GLAD/include"
 IncludeDirs["STB"] = "thirdparty/stb"
 IncludeDirs["GLM"] = "thirdparty/glm"
+IncludeDirs["TinygLTF"] = "thirdparty/tinygltf"
+IncludeDirs["JsonLoader"] = "thirdparty/nl-json"
 
-LibraryDirs ={}
+LibraryDirs = {}
 LibraryDirs["GLFW"] = "thirdparty/GLFW/lib-vc2022"
-
+ 
 project "Glimmer"
     location "src"
     kind "ConsoleApp"
@@ -45,7 +47,9 @@ project "Glimmer"
         "%{IncludeDirs.GLFW}",
         "%{IncludeDirs.GLAD}",
         "%{IncludeDirs.STB}",
-        "%{IncludeDirs.GLM}"
+        "%{IncludeDirs.GLM}",
+        "%{IncludeDirs.TinygLTF}",
+        "%{IncludeDirs.JsonLoader}"
     }
 
     libdirs
