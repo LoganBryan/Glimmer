@@ -570,7 +570,10 @@ int main()
 	// Load gLTF model
 	mainShader.Use();
 	mainShader.SetFloat("reflectionStrength", 1.0f);
-	mainShader.SetInt("skybox", 0);
+	mainShader.SetVec3("inDiffuseColor", 0.5f, 0.2f, 0.0f);
+	mainShader.SetFloat("specularPower", 16.0f);
+	mainShader.SetFloat("gamma", true);
+	mainShader.SetInt("skybox", 1);
 	tinygltf::Model exModel = LoadModel(testModel);
 	auto vertElementbuffers = BindModel(exModel);
 
@@ -661,7 +664,7 @@ int main()
 
 		// Draw skybox cube
 		glBindVertexArray(skyboxVAO);
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
