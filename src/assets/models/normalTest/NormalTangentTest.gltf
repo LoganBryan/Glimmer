@@ -1,0 +1,176 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v1.8.19",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                1
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "NormalTangentTest_low"
+        },
+        {
+            "children" : [
+                0
+            ],
+            "name" : "Node_0"
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "name" : "Material_0",
+            "normalTexture" : {
+                "index" : 0
+            },
+            "occlusionTexture" : {
+                "index" : 1
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 2
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 1
+                }
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "NormalTangentTest_low",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TANGENT" : 2,
+                        "TEXCOORD_0" : 3
+                    },
+                    "indices" : 4,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "sampler" : 0,
+            "source" : 0
+        },
+        {
+            "sampler" : 0,
+            "source" : 1
+        },
+        {
+            "sampler" : 0,
+            "source" : 2
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "NormalTangentTest_Normal",
+            "uri" : "NormalTangentTest_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "NormalTangentTest_OcclusionRoughnessMetallic",
+            "uri" : "NormalTangentTest_OcclusionRoughnessMetallic.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "NormalTangentTest_BaseColor",
+            "uri" : "NormalTangentTest_BaseColor.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 3983,
+            "max" : [
+                1.1100000143051147,
+                0.9500001072883606,
+                0.08049999922513962
+            ],
+            "min" : [
+                -1.1100000143051147,
+                -1.2000000476837158,
+                -0.009999989531934261
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 3983,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 3983,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 3983,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5123,
+            "count" : 23322,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 47796,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 47796,
+            "byteOffset" : 47796
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 63728,
+            "byteOffset" : 95592
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 31864,
+            "byteOffset" : 159320
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 46644,
+            "byteOffset" : 191184
+        }
+    ],
+    "samplers" : [
+        {
+            "magFilter" : 9729,
+            "minFilter" : 9987
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 237828,
+            "uri" : "NormalTangentTest.bin"
+        }
+    ]
+}

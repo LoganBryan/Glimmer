@@ -265,7 +265,7 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 
 		if (bufferView.target == 0)
 		{
-			printf("WARNING! Buffer View target is zero!\n Unsupported bufferView"); // spec2.0
+			printf("WARNING! Buffer View target is zero!\n Unsupported bufferView\n"); // spec2.0
 			continue;
 		}
 
@@ -298,6 +298,7 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 				if (attr.first.compare("POSITION") == 0) loc = 0;
 				if (attr.first.compare("NORMAL") == 0) loc = 1;
 				if (attr.first.compare("TEXCOORD_0") == 0) loc = 2;
+				if (attr.first.compare("TANGENT") == 0) loc = 3; // Should probably check if this exists... use mikktspace if they're not there
 
 				if (loc > -1)
 				{
@@ -328,6 +329,7 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 								glGenTextures(1, &texID);
 
 								glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+								glActiveTexture(textureUnit);
 								glBindTexture(GL_TEXTURE_2D, texID);
 
 								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -336,17 +338,47 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 								glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image.image[0]);
-
-								glActiveTexture(textureUnit);
-								//glBindTexture(GL_TEXTURE_2D, texID);
+								glBindTexture(GL_TEXTURE_2D, texID);
 							}
+
+							glActiveTexture(textureUnit);
+							glUniform1i(uniformLocation, textureUnit - GL_TEXTURE0);
 						}
 					};
 
+				// Albedo
 				if (material.values.find("baseColorTexture") != material.values.end())
 				{
 					int textureIndex = material.values.at("baseColorTexture").TextureIndex();
 					bindTexture(textureIndex, GL_TEXTURE0, 0);
+				}
+
+				// Metallic-Roughness
+				if (material.values.find("metallicRoughnessTexture") != material.values.end())
+				{
+					int textureIndex = material.values.at("metallicRoughnessTexture").TextureIndex();
+					bindTexture(textureIndex, GL_TEXTURE1, 1);
+				}
+
+				// Normal
+				if (material.additionalValues.find("normalTexture") != material.additionalValues.end())
+				{
+					int textureIndex = material.additionalValues.at("normalTexture").TextureIndex();
+					bindTexture(textureIndex, GL_TEXTURE2, 2);
+				}
+
+				// AO
+				if (material.additionalValues.find("occlusionTexture") != material.additionalValues.end())
+				{
+					int textureIndex = material.additionalValues.at("occlusionTexture").TextureIndex();
+					bindTexture(textureIndex, GL_TEXTURE3, 3);
+				}
+
+				// Emissive
+				if (material.additionalValues.find("emissiveTexture") != material.additionalValues.end())
+				{
+					int textureIndex = material.additionalValues.at("emissiveTexture").TextureIndex();
+					bindTexture(textureIndex, GL_TEXTURE4, 4);
 				}
 			}
 		}
@@ -560,11 +592,18 @@ int main()
 
 	// Load gLTF model
 	mainShader.Use();
+	mainShader.SetInt("albedoMap", 0);
+	mainShader.SetInt("metallicRoughnessMap", 1);
+	mainShader.SetInt("normalMap", 2);
+	mainShader.SetInt("aoMap", 3);
+	mainShader.SetInt("emissiveMap", 4);
+	mainShader.SetInt("skybox", 5);
+
 	mainShader.SetFloat("reflectionStrength", 1.0f);
 	mainShader.SetVec3("inDiffuseColor", 0.5f, 0.2f, 0.0f);
-	mainShader.SetFloat("specularPower", 16.0f);
+	mainShader.SetFloat("specularPower", 32.0f);
 	mainShader.SetFloat("gamma", true);
-	mainShader.SetInt("skybox", 1);
+
 	tinygltf::Model exModel = LoadModel(testModel);
 	auto vertElementbuffers = BindModel(exModel);
 
@@ -584,6 +623,19 @@ int main()
 	glEnable(GL_STENCIL_TEST);
 
 	glDisable(GL_BLEND);
+
+	GLint loc1 = glGetUniformLocation(mainShader.GetID(), "albedoMap");
+	GLint loc2 = glGetUniformLocation(mainShader.GetID(), "metallicRoughnessMap");
+	GLint loc3 = glGetUniformLocation(mainShader.GetID(), "normalMap");
+	GLint loc4 = glGetUniformLocation(mainShader.GetID(), "aoMap");
+	GLint loc5 = glGetUniformLocation(mainShader.GetID(), "emissiveMap");
+	GLint loc6 = glGetUniformLocation(mainShader.GetID(), "emissiveMap");
+	printf("albedoMap location %d\n", loc1);
+	printf("metallicRoughnessMap location %d\n", loc2);
+	printf("normalMap location %d\n", loc3);
+	printf("aoMap location %d\n", loc4);
+	printf("emissiveMap location %d\n", loc5);
+	printf("skybox location %d\n", loc6);
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -619,7 +671,6 @@ int main()
 		mainShader.SetMatrix4("projection", projection);
 		mainShader.SetMatrix4("view", view);
 
-		//glm::mat4 model = glm::mat4(1.0f);
 		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		mainShader.SetMatrix4("model", model);
 
@@ -655,7 +706,7 @@ int main()
 
 		// Draw skybox cube
 		glBindVertexArray(skyboxVAO);
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
