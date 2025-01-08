@@ -292,30 +292,17 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 
 				glBindBuffer(GL_ARRAY_BUFFER, vbos[accessor.bufferView]);
 
-				int size = 1;
-				if (accessor.type != TINYGLTF_TYPE_SCALAR)
-				{
-					size = accessor.type;
-				}
+				int size = (accessor.type == TINYGLTF_TYPE_SCALAR) ? 1 : accessor.type;
 
-				int vertAArray = -1;
-				if (attr.first.compare("POSITION") == 0)
-				{
-					vertAArray = 0;
-				}
-				if (attr.first.compare("NORMAL") == 0)
-				{
-					vertAArray = 1;
-				}
-				if (attr.first.compare("TEXCOORD_0") == 0)
-				{
-					vertAArray = 2;
-				}
+				int loc = -1;
+				if (attr.first.compare("POSITION") == 0) loc = 0;
+				if (attr.first.compare("NORMAL") == 0) loc = 1;
+				if (attr.first.compare("TEXCOORD_0") == 0) loc = 2;
 
-				if (vertAArray > -1)
+				if (loc > -1)
 				{
-					glEnableVertexAttribArray(vertAArray);
-					glVertexAttribPointer(vertAArray, size, accessor.componentType, accessor.normalized ? GL_TRUE : GL_FALSE, bStride, BUFFER_OFFSET(accessor.byteOffset));
+					glEnableVertexAttribArray(loc);
+					glVertexAttribPointer(loc, size, accessor.componentType, accessor.normalized ? GL_TRUE : GL_FALSE, bStride, BUFFER_OFFSET(accessor.byteOffset));
 				}
 				else
 				{
@@ -323,50 +310,43 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 				}
 			}
 
-			if (model.textures.size() > 0)
+			if (primitve.material >= 0 && primitve.material < model.materials.size())
 			{
-				tinygltf::Texture& texture = model.textures[0];
+				const tinygltf::Material& material = model.materials[primitve.material];
 
-				if (texture.source > -1)
+				auto bindTexture = [&](int textureIndex, GLenum textureUnit, GLenum uniformLocation)
+					{
+						if (textureIndex >= 0 && textureIndex < model.textures.size())
+						{
+							const tinygltf::Texture& texture = model.textures[textureIndex];
+
+							if (texture.source >= 0 && texture.source < model.images.size())
+							{
+								const tinygltf::Image& image = model.images[texture.source];
+
+								GLuint texID;
+								glGenTextures(1, &texID);
+
+								glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+								glBindTexture(GL_TEXTURE_2D, texID);
+
+								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+								glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image.image[0]);
+
+								glActiveTexture(textureUnit);
+								//glBindTexture(GL_TEXTURE_2D, texID);
+							}
+						}
+					};
+
+				if (material.values.find("baseColorTexture") != material.values.end())
 				{
-					GLuint textureID;
-					glGenTextures(1, &textureID);
-
-					tinygltf::Image& image = model.images[texture.source];
-
-					glBindTexture(GL_TEXTURE_2D, textureID);
-					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-					glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-					GLenum textureFormat = GL_RGBA;
-
-					if (image.component == 1)
-					{
-						textureFormat = GL_RED;
-					}
-					else if (image.component == 2)
-					{
-						textureFormat = GL_RG;
-					}
-					else if (image.component == 3)
-					{
-						textureFormat = GL_RGB;
-					}
-
-					GLenum imageType = GL_UNSIGNED_BYTE;
-					if (image.bits == 16) // Don't need to change if 8 bit
-					{
-						imageType == GL_UNSIGNED_SHORT;
-					}
-
-					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, textureFormat, imageType, &image.image.at(0));
-
-					// Bind texture ID to shader texture unit
-					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, textureID);
+					int textureIndex = material.values.at("baseColorTexture").TextureIndex();
+					bindTexture(textureIndex, GL_TEXTURE0, 0);
 				}
 			}
 		}
@@ -404,14 +384,23 @@ std::pair<GLuint, std::map<int, GLuint>> BindModel(tinygltf::Model& model)
 
 	glBindVertexArray(0);
 
-	// Cleanup vbo, delete index buffer later
-	for (auto it = vbos.cbegin(); it != vbos.cend();)
+	return std::make_pair(vao, vbos);
+}
+
+void CleanupBuffers(std::pair<GLuint, std::map<int, GLuint>>& vertAndElementBuffers, tinygltf::Model& model)
+{
+	// Delete VAO
+	glDeleteVertexArrays(1, &vertAndElementBuffers.first);
+
+	// Delete VBOs
+	for (auto it = vertAndElementBuffers.second.cbegin(); it != vertAndElementBuffers.second.cend();)
 	{
-		tinygltf::BufferView bufferView = model.bufferViews[it->first];
+		const tinygltf::BufferView& bufferView = model.bufferViews[it->first];
+
 		if (bufferView.target != GL_ELEMENT_ARRAY_BUFFER)
 		{
-			glDeleteBuffers(1, &vbos[it->first]);
-			vbos.erase(it++);
+			glDeleteBuffers(1, &it->second);
+			vertAndElementBuffers.second.erase(it++);
 		}
 		else
 		{
@@ -419,7 +408,8 @@ std::pair<GLuint, std::map<int, GLuint>> BindModel(tinygltf::Model& model)
 		}
 	}
 
-	return std::make_pair(vao, vbos);
+	// Clear map
+	//vertAndElementBuffers.second.clear();
 }
 
 void DrawMesh(const std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mesh& mesh)
@@ -497,6 +487,7 @@ unsigned int GenerateCubemap(std::vector<std::string> faces)
 int main()
 {
 	glfwInit();
+	glfwWindowHint(GLFW_SAMPLES, 8);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -701,6 +692,8 @@ int main()
 	glDeleteBuffers(1, &skyboxVBO);
 	//glDeleteVertexArrays(1, &lightVAO);
 	//glDeleteBuffers(1, &VBO);
+
+	CleanupBuffers(vertElementbuffers, exModel);
 	mainShader.Delete();
 
 	glfwTerminate();

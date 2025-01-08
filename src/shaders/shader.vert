@@ -40,10 +40,4 @@ void main()
 
 	mat4 MVP = projection * view * model;
 	gl_Position = MVP * vec4(aVertex, 1.0);
-
-//	fragPos = vec3(model * vec4(aVertex, 1.0));
-//	normal = mat3(transpose(inverse(model))) * aNormal;
-//	texCoord = aTexCoord;
-//
-//	gl_Position = projection * view * vec4(fragPos, 1.0);
 }
