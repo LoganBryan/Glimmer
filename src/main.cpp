@@ -24,6 +24,8 @@
 #define TWO_PI 6.2831855
 #define BUFFER_OFFSET(i) ((char*)NULL + (i))
 
+// TODO: General code cleanup
+
 // TEMP
 float vertices[] = {
 	// Pos          // Normal           // TexCoord
@@ -113,6 +115,17 @@ float skyboxVertices[] = {
 	 1.0f, -1.0f, -1.0f,
 	-1.0f, -1.0f,  1.0f,
 	 1.0f, -1.0f,  1.0f
+};
+
+float quadVertices[] = { // vertex for a quad to fill the screen
+	// positions   // texCoords
+	-1.0f,  1.0f,  0.0f, 1.0f,
+	-1.0f, -1.0f,  0.0f, 0.0f,
+	 1.0f, -1.0f,  1.0f, 0.0f,
+
+	-1.0f,  1.0f,  0.0f, 1.0f,
+	 1.0f, -1.0f,  1.0f, 0.0f,
+	 1.0f,  1.0f,  1.0f, 1.0f
 };
 
 glm::vec3 cubePositions[] = {
@@ -252,11 +265,12 @@ tinygltf::Model LoadModel(std::string path)
 
 	printf("Success!\n Model loaded: %s\n", path.c_str());
 
-	PrintNodes(model.scenes[model.defaultScene > -1 ? model.defaultScene : 0]);
+	//PrintNodes(model.scenes[model.defaultScene > -1 ? model.defaultScene : 0]);
 
 	return model;
 }
 
+// Todo; if it's missing some of the textures the output is black + doesn't seem like models with multiple meshes wants to work?
 void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mesh& mesh)
 {
 	for (size_t i = 0; i < model.bufferViews.size(); i++)
@@ -270,14 +284,14 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 		}
 
 		const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-		printf("Buffer view target, %d\n", bufferView.target);
+		//printf("Buffer view target, %d\n", bufferView.target);
 
 		GLuint vbo;
 		glGenBuffers(1, &vbo);
 		vbos[i] = vbo;
 		glBindBuffer(bufferView.target, vbo);
 
-		printf("Buffer size: %zu \n Buffer View offset: %zu\n", buffer.data.size(), bufferView.byteOffset);
+		//printf("Buffer size: %zu \n Buffer View offset: %zu\n", buffer.data.size(), bufferView.byteOffset);
 		glBufferData(bufferView.target, bufferView.byteLength, &buffer.data.at(0) + bufferView.byteOffset, GL_STATIC_DRAW);
 
 		for (size_t i = 0; i < mesh.primitives.size(); i++)
@@ -324,7 +338,6 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 							if (texture.source >= 0 && texture.source < model.images.size())
 							{
 								const tinygltf::Image& image = model.images[texture.source];
-
 								GLuint texID;
 								glGenTextures(1, &texID);
 
@@ -332,17 +345,21 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 								glActiveTexture(textureUnit);
 								glBindTexture(GL_TEXTURE_2D, texID);
 
-								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-								glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
 								glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image.image[0]);
-								glBindTexture(GL_TEXTURE_2D, texID);
-							}
 
-							glActiveTexture(textureUnit);
-							glUniform1i(uniformLocation, textureUnit - GL_TEXTURE0);
+								glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+								glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+								glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+								glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+								glGenerateMipmap(GL_TEXTURE_2D);
+
+								glBindTexture(GL_TEXTURE_2D, texID);
+
+								glActiveTexture(textureUnit);
+								glUniform1i(uniformLocation, textureUnit);
+
+							}
 						}
 					};
 
@@ -353,37 +370,38 @@ void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mes
 					bindTexture(textureIndex, GL_TEXTURE0, 0);
 				}
 
-				// Metallic-Roughness
-				if (material.values.find("metallicRoughnessTexture") != material.values.end())
-				{
-					int textureIndex = material.values.at("metallicRoughnessTexture").TextureIndex();
-					bindTexture(textureIndex, GL_TEXTURE1, 1);
-				}
-
-				// Normal
-				if (material.additionalValues.find("normalTexture") != material.additionalValues.end())
-				{
-					int textureIndex = material.additionalValues.at("normalTexture").TextureIndex();
-					bindTexture(textureIndex, GL_TEXTURE2, 2);
-				}
-
 				// AO
 				if (material.additionalValues.find("occlusionTexture") != material.additionalValues.end())
 				{
 					int textureIndex = material.additionalValues.at("occlusionTexture").TextureIndex();
-					bindTexture(textureIndex, GL_TEXTURE3, 3);
+					bindTexture(textureIndex, GL_TEXTURE1, 1);
 				}
 
 				// Emissive
 				if (material.additionalValues.find("emissiveTexture") != material.additionalValues.end())
 				{
 					int textureIndex = material.additionalValues.at("emissiveTexture").TextureIndex();
+					bindTexture(textureIndex, GL_TEXTURE2, 2);
+				}
+
+				// Metallic-Roughness
+				if (material.values.find("metallicRoughnessTexture") != material.values.end())
+				{
+					int textureIndex = material.values.at("metallicRoughnessTexture").TextureIndex();
+					bindTexture(textureIndex, GL_TEXTURE3, 3);
+				}
+
+				// Normal
+				if (material.additionalValues.find("normalTexture") != material.additionalValues.end())
+				{
+					int textureIndex = material.additionalValues.at("normalTexture").TextureIndex();
 					bindTexture(textureIndex, GL_TEXTURE4, 4);
 				}
 			}
 		}
 	}
 }
+
 
 void BindModelNodes(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Node& node)
 {
@@ -441,7 +459,7 @@ void CleanupBuffers(std::pair<GLuint, std::map<int, GLuint>>& vertAndElementBuff
 	}
 
 	// Clear map
-	//vertAndElementBuffers.second.clear();
+	vertAndElementBuffers.second.clear();
 }
 
 void DrawMesh(const std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mesh& mesh)
@@ -541,7 +559,7 @@ int main()
 		printf("Failed to initialize GLAD!");
 		return -1;
 	}
-	
+
 	//glViewport(0, 0, 800, 600);
 	std::cout << "ver: " << glGetString(GL_VERSION) << std::endl;
 
@@ -555,6 +573,48 @@ int main()
 	Shader lightSourceShader("shaders/lightFullBright.vert", "shaders/lightFullBright.frag");
 	Shader outlineShader("shaders/shader.vert", "shaders/singleColor.frag");
 	Shader skyboxShader("shaders/skybox.vert", "shaders/skybox.frag");
+	Shader framebufferShader("shaders/framebuffer.vert", "shaders/framebuffer.frag");
+
+	framebufferShader.Use();
+	framebufferShader.SetInt("screenTexture", 5);
+	// Setup framebuffer object
+	unsigned int fbo;
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+	// Create texture attachment
+	unsigned int textureCBuffer;
+	glGenTextures(1, &textureCBuffer);
+	glBindTexture(GL_TEXTURE_2D, textureCBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureCBuffer, 0); // Attach
+	//glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Setup renderbuffer object attachment
+	unsigned int rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // Attach
+	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		printf("Framebuffer %d is incomplete!\n", fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// Screen quad
+	unsigned int screenQuadVAO, screenQuadVBO;
+	glGenVertexArrays(1, &screenQuadVAO);
+	glGenBuffers(1, &screenQuadVBO);
+	glBindVertexArray(screenQuadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, screenQuadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
 	// Object for light source
 	//unsigned int VBO;
@@ -592,12 +652,6 @@ int main()
 
 	// Load gLTF model
 	mainShader.Use();
-	mainShader.SetInt("albedoMap", 0);
-	mainShader.SetInt("metallicRoughnessMap", 1);
-	mainShader.SetInt("normalMap", 2);
-	mainShader.SetInt("aoMap", 3);
-	mainShader.SetInt("emissiveMap", 4);
-	mainShader.SetInt("skybox", 5);
 
 	mainShader.SetFloat("reflectionStrength", 1.0f);
 	mainShader.SetVec3("inDiffuseColor", 0.5f, 0.2f, 0.0f);
@@ -624,19 +678,6 @@ int main()
 
 	glDisable(GL_BLEND);
 
-	GLint loc1 = glGetUniformLocation(mainShader.GetID(), "albedoMap");
-	GLint loc2 = glGetUniformLocation(mainShader.GetID(), "metallicRoughnessMap");
-	GLint loc3 = glGetUniformLocation(mainShader.GetID(), "normalMap");
-	GLint loc4 = glGetUniformLocation(mainShader.GetID(), "aoMap");
-	GLint loc5 = glGetUniformLocation(mainShader.GetID(), "emissiveMap");
-	GLint loc6 = glGetUniformLocation(mainShader.GetID(), "emissiveMap");
-	printf("albedoMap location %d\n", loc1);
-	printf("metallicRoughnessMap location %d\n", loc2);
-	printf("normalMap location %d\n", loc3);
-	printf("aoMap location %d\n", loc4);
-	printf("emissiveMap location %d\n", loc5);
-	printf("skybox location %d\n", loc6);
-
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -662,6 +703,10 @@ int main()
 		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, 0.1f, 100.0f);
 		glm::mat4 view = mainCamera.Update();
 		glm::mat4 model = glm::mat4(1.0f);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo); // Draw to framebuffer
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 
 		// gLTF object
 		mainShader.Use();
@@ -712,6 +757,15 @@ int main()
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, 0); // Revert to default framebuffer
+
+		framebufferShader.Use();
+		glBindVertexArray(screenQuadVAO);
+		glDisable(GL_DEPTH_TEST);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, textureCBuffer);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
 		// Light object
 		//lightSourceShader.Use();
 		//lightSourceShader.SetMatrix4("projection", projection);
@@ -740,7 +794,11 @@ int main()
 	// Deallocate
 	glDeleteVertexArrays(1, &vertElementbuffers.first);
 	glDeleteVertexArrays(1, &skyboxVAO);
+	glDeleteVertexArrays(1, &screenQuadVAO);
 	glDeleteBuffers(1, &skyboxVBO);
+	glDeleteBuffers(1, &screenQuadVBO);
+	glDeleteRenderbuffers(1, &rbo);
+	glDeleteFramebuffers(1, &fbo);
 	//glDeleteVertexArrays(1, &lightVAO);
 	//glDeleteBuffers(1, &VBO);
 

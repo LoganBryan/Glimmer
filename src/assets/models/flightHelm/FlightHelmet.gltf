@@ -1,0 +1,800 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v1.8.19",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "Hose_low"
+        },
+        {
+            "mesh" : 1,
+            "name" : "RubberWood_low"
+        },
+        {
+            "mesh" : 2,
+            "name" : "GlassPlastic_low"
+        },
+        {
+            "mesh" : 3,
+            "name" : "MetalParts_low"
+        },
+        {
+            "mesh" : 4,
+            "name" : "LeatherParts_low"
+        },
+        {
+            "mesh" : 5,
+            "name" : "Lenses_low"
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "name" : "HoseMat",
+            "normalTexture" : {
+                "index" : 0
+            },
+            "occlusionTexture" : {
+                "index" : 1
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 2
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 1
+                }
+            }
+        },
+        {
+            "name" : "RubberWoodMat",
+            "normalTexture" : {
+                "index" : 3
+            },
+            "occlusionTexture" : {
+                "index" : 4
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 5
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 4
+                }
+            }
+        },
+        {
+            "name" : "GlassPlasticMat",
+            "normalTexture" : {
+                "index" : 6
+            },
+            "occlusionTexture" : {
+                "index" : 7
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 8
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 7
+                }
+            }
+        },
+        {
+            "name" : "MetalPartsMat",
+            "normalTexture" : {
+                "index" : 9
+            },
+            "occlusionTexture" : {
+                "index" : 10
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 11
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 10
+                }
+            }
+        },
+        {
+            "name" : "LeatherPartsMat",
+            "normalTexture" : {
+                "index" : 12
+            },
+            "occlusionTexture" : {
+                "index" : 13
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 14
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 13
+                }
+            }
+        },
+        {
+            "name" : "LensesMat",
+            "normalTexture" : {
+                "index" : 15
+            },
+            "occlusionTexture" : {
+                "index" : 16
+            },
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 17
+                },
+                "metallicRoughnessTexture" : {
+                    "index" : 16
+                }
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Hose_low",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TANGENT" : 2,
+                        "TEXCOORD_0" : 3
+                    },
+                    "indices" : 4,
+                    "material" : 0
+                }
+            ]
+        },
+        {
+            "name" : "RubberWood_low",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 5,
+                        "NORMAL" : 6,
+                        "TANGENT" : 7,
+                        "TEXCOORD_0" : 8
+                    },
+                    "indices" : 9,
+                    "material" : 1
+                }
+            ]
+        },
+        {
+            "name" : "GlassPlastic_low",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 10,
+                        "NORMAL" : 11,
+                        "TANGENT" : 12,
+                        "TEXCOORD_0" : 13
+                    },
+                    "indices" : 14,
+                    "material" : 2
+                }
+            ]
+        },
+        {
+            "name" : "MetalParts_low",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 15,
+                        "NORMAL" : 16,
+                        "TANGENT" : 17,
+                        "TEXCOORD_0" : 18
+                    },
+                    "indices" : 19,
+                    "material" : 3
+                }
+            ]
+        },
+        {
+            "name" : "LeatherParts_low",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 20,
+                        "NORMAL" : 21,
+                        "TANGENT" : 22,
+                        "TEXCOORD_0" : 23
+                    },
+                    "indices" : 24,
+                    "material" : 4
+                }
+            ]
+        },
+        {
+            "name" : "Lenses_low",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 25,
+                        "NORMAL" : 26,
+                        "TANGENT" : 27,
+                        "TEXCOORD_0" : 28
+                    },
+                    "indices" : 29,
+                    "material" : 5
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "sampler" : 0,
+            "source" : 0
+        },
+        {
+            "sampler" : 0,
+            "source" : 1
+        },
+        {
+            "sampler" : 0,
+            "source" : 2
+        },
+        {
+            "sampler" : 0,
+            "source" : 0
+        },
+        {
+            "sampler" : 0,
+            "source" : 1
+        },
+        {
+            "sampler" : 0,
+            "source" : 2
+        },
+        {
+            "sampler" : 0,
+            "source" : 3
+        },
+        {
+            "sampler" : 0,
+            "source" : 4
+        },
+        {
+            "sampler" : 0,
+            "source" : 5
+        },
+        {
+            "sampler" : 0,
+            "source" : 6
+        },
+        {
+            "sampler" : 0,
+            "source" : 7
+        },
+        {
+            "sampler" : 0,
+            "source" : 8
+        },
+        {
+            "sampler" : 0,
+            "source" : 9
+        },
+        {
+            "sampler" : 0,
+            "source" : 10
+        },
+        {
+            "sampler" : 0,
+            "source" : 11
+        },
+        {
+            "sampler" : 0,
+            "source" : 12
+        },
+        {
+            "sampler" : 0,
+            "source" : 13
+        },
+        {
+            "sampler" : 0,
+            "source" : 14
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_RubberWoodMat_Normal",
+            "uri" : "FlightHelmet_Materials_RubberWoodMat_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_RubberWoodMat_OcclusionRoughMetal",
+            "uri" : "FlightHelmet_Materials_RubberWoodMat_OcclusionRoughMetal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_RubberWoodMat_BaseColor",
+            "uri" : "FlightHelmet_Materials_RubberWoodMat_BaseColor.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_GlassPlasticMat_Normal",
+            "uri" : "FlightHelmet_Materials_GlassPlasticMat_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_GlassPlasticMat_OcclusionRoughMetal",
+            "uri" : "FlightHelmet_Materials_GlassPlasticMat_OcclusionRoughMetal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_GlassPlasticMat_BaseColor",
+            "uri" : "FlightHelmet_Materials_GlassPlasticMat_BaseColor.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_MetalPartsMat_Normal",
+            "uri" : "FlightHelmet_Materials_MetalPartsMat_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_MetalPartsMat_OcclusionRoughMetal",
+            "uri" : "FlightHelmet_Materials_MetalPartsMat_OcclusionRoughMetal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_MetalPartsMat_BaseColor",
+            "uri" : "FlightHelmet_Materials_MetalPartsMat_BaseColor.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_LeatherPartsMat_Normal",
+            "uri" : "FlightHelmet_Materials_LeatherPartsMat_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_LeatherPartsMat_OcclusionRoughMetal",
+            "uri" : "FlightHelmet_Materials_LeatherPartsMat_OcclusionRoughMetal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_LeatherPartsMat_BaseColor",
+            "uri" : "FlightHelmet_Materials_LeatherPartsMat_BaseColor.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_LensesMat_Normal",
+            "uri" : "FlightHelmet_Materials_LensesMat_Normal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_LensesMat_OcclusionRoughMetal",
+            "uri" : "FlightHelmet_Materials_LensesMat_OcclusionRoughMetal.png"
+        },
+        {
+            "mimeType" : "image/png",
+            "name" : "FlightHelmet_Materials_LensesMat_BaseColor",
+            "uri" : "FlightHelmet_Materials_LensesMat_BaseColor.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 10472,
+            "max" : [
+                0.108108289539814,
+                0.3565802574157715,
+                0.19040986895561218
+            ],
+            "min" : [
+                -0.0722125768661499,
+                0.10412022471427917,
+                -0.08839477598667145
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 10472,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 10472,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5126,
+            "count" : 10472,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5123,
+            "count" : 59040,
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 5,
+            "componentType" : 5126,
+            "count" : 13691,
+            "max" : [
+                0.1629406362771988,
+                0.7025225758552551,
+                0.2000291645526886
+            ],
+            "min" : [
+                -0.15885746479034424,
+                -2.142429366358556e-05,
+                -0.17154578864574432
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 6,
+            "componentType" : 5126,
+            "count" : 13691,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 7,
+            "componentType" : 5126,
+            "count" : 13691,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 8,
+            "componentType" : 5126,
+            "count" : 13691,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 9,
+            "componentType" : 5123,
+            "count" : 72534,
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 10,
+            "componentType" : 5126,
+            "count" : 4812,
+            "max" : [
+                0.14049406349658966,
+                0.6182865500450134,
+                0.14737364649772644
+            ],
+            "min" : [
+                -0.14084601402282715,
+                0.4409570097923279,
+                -0.1078183650970459
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 11,
+            "componentType" : 5126,
+            "count" : 4812,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 12,
+            "componentType" : 5126,
+            "count" : 4812,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 13,
+            "componentType" : 5126,
+            "count" : 4812,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 14,
+            "componentType" : 5123,
+            "count" : 24408,
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 15,
+            "componentType" : 5126,
+            "count" : 13691,
+            "max" : [
+                0.1327083706855774,
+                0.6024364233016968,
+                0.19947707653045654
+            ],
+            "min" : [
+                -0.20364271104335785,
+                0.021160749718546867,
+                -0.14751268923282623
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 16,
+            "componentType" : 5126,
+            "count" : 13691,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 17,
+            "componentType" : 5126,
+            "count" : 13691,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 18,
+            "componentType" : 5126,
+            "count" : 13691,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 19,
+            "componentType" : 5123,
+            "count" : 60288,
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 20,
+            "componentType" : 5126,
+            "count" : 12544,
+            "max" : [
+                0.12493337690830231,
+                0.7160004377365112,
+                0.1291685551404953
+            ],
+            "min" : [
+                -0.12586301565170288,
+                0.29582661390304565,
+                -0.15415160357952118
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 21,
+            "componentType" : 5126,
+            "count" : 12544,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 22,
+            "componentType" : 5126,
+            "count" : 12544,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 23,
+            "componentType" : 5126,
+            "count" : 12544,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 24,
+            "componentType" : 5123,
+            "count" : 65688,
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 25,
+            "componentType" : 5126,
+            "count" : 439,
+            "max" : [
+                0.10192074626684189,
+                0.5936986207962036,
+                0.1529267281293869
+            ],
+            "min" : [
+                -0.101920947432518,
+                0.5300428867340088,
+                0.09017482399940491
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 26,
+            "componentType" : 5126,
+            "count" : 439,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 27,
+            "componentType" : 5126,
+            "count" : 439,
+            "type" : "VEC4"
+        },
+        {
+            "bufferView" : 28,
+            "componentType" : 5126,
+            "count" : 439,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 29,
+            "componentType" : 5123,
+            "count" : 2208,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 125664,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 125664,
+            "byteOffset" : 125664
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 167552,
+            "byteOffset" : 251328
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 83776,
+            "byteOffset" : 418880
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 118080,
+            "byteOffset" : 502656
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 164292,
+            "byteOffset" : 620736
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 164292,
+            "byteOffset" : 785028
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 219056,
+            "byteOffset" : 949320
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 109528,
+            "byteOffset" : 1168376
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 145068,
+            "byteOffset" : 1277904
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 57744,
+            "byteOffset" : 1422972
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 57744,
+            "byteOffset" : 1480716
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 76992,
+            "byteOffset" : 1538460
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 38496,
+            "byteOffset" : 1615452
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 48816,
+            "byteOffset" : 1653948
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 164292,
+            "byteOffset" : 1702764
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 164292,
+            "byteOffset" : 1867056
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 219056,
+            "byteOffset" : 2031348
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 109528,
+            "byteOffset" : 2250404
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 120576,
+            "byteOffset" : 2359932
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 150528,
+            "byteOffset" : 2480508
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 150528,
+            "byteOffset" : 2631036
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 200704,
+            "byteOffset" : 2781564
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 100352,
+            "byteOffset" : 2982268
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 131376,
+            "byteOffset" : 3082620
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 5268,
+            "byteOffset" : 3213996
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 5268,
+            "byteOffset" : 3219264
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 7024,
+            "byteOffset" : 3224532
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 3512,
+            "byteOffset" : 3231556
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 4416,
+            "byteOffset" : 3235068
+        }
+    ],
+    "samplers" : [
+        {
+            "magFilter" : 9729,
+            "minFilter" : 9987
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 3239484,
+            "uri" : "FlightHelmet.bin"
+        }
+    ]
+}

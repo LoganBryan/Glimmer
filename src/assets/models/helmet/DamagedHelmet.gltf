@@ -17,10 +17,10 @@
             "mesh" : 0,
             "name" : "node_damagedHelmet_-6514.001",
             "rotation" : [
-                0.7071068286895752,
+                0.7070533037185669,
                 0,
                 0,
-                0.7071068286895752
+                0.7071602940559387
             ]
         }
     ],
@@ -112,7 +112,7 @@
         {
             "bufferView" : 0,
             "componentType" : 5126,
-            "count" : 14890,
+            "count" : 16417,
             "max" : [
                 0.9424954056739807,
                 0.8128451108932495,
@@ -128,19 +128,19 @@
         {
             "bufferView" : 1,
             "componentType" : 5126,
-            "count" : 14890,
+            "count" : 16417,
             "type" : "VEC3"
         },
         {
             "bufferView" : 2,
             "componentType" : 5126,
-            "count" : 14890,
+            "count" : 16417,
             "type" : "VEC4"
         },
         {
             "bufferView" : 3,
             "componentType" : 5126,
-            "count" : 14890,
+            "count" : 16417,
             "type" : "VEC2"
         },
         {
@@ -153,28 +153,28 @@
     "bufferViews" : [
         {
             "buffer" : 0,
-            "byteLength" : 178680,
+            "byteLength" : 197004,
             "byteOffset" : 0
         },
         {
             "buffer" : 0,
-            "byteLength" : 178680,
-            "byteOffset" : 178680
+            "byteLength" : 197004,
+            "byteOffset" : 197004
         },
         {
             "buffer" : 0,
-            "byteLength" : 238240,
-            "byteOffset" : 357360
+            "byteLength" : 262672,
+            "byteOffset" : 394008
         },
         {
             "buffer" : 0,
-            "byteLength" : 119120,
-            "byteOffset" : 595600
+            "byteLength" : 131336,
+            "byteOffset" : 656680
         },
         {
             "buffer" : 0,
             "byteLength" : 92712,
-            "byteOffset" : 714720
+            "byteOffset" : 788016
         }
     ],
     "samplers" : [
@@ -185,7 +185,7 @@
     ],
     "buffers" : [
         {
-            "byteLength" : 807432,
+            "byteLength" : 880728,
             "uri" : "DamagedHelmet.bin"
         }
     ]

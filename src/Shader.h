@@ -20,6 +20,8 @@ public:
 	Shader(const char* vertexPath, const char* fragmentPath);
 
 	inline void Use() const { glUseProgram(programID); }
+	inline void End() const { glUseProgram(0); }
+
 	inline void Delete() const { glDeleteProgram(programID); }
 
 	inline void SetBool(const std::string& name, bool value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
