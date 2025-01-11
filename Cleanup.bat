@@ -5,8 +5,8 @@ IF EXIST bin (
 	echo Deleted bin..
 )
 
-IF EXIST "Theia.sln" (
-	del /q "Theia.sln"
+IF EXIST "Glimmer.sln" (
+	del /q "Glimmer.sln"
 	echo Deleted Solution File..
 )
 

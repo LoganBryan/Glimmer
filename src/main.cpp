@@ -6,6 +6,7 @@
 #include <format>
 #include <vector>
 #include <map>
+#include <chrono>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -15,6 +16,10 @@
 
 #include "stb_image.h"
 #include "tiny_gltf.h"
+
+#include <fastgltf/core.hpp>
+#include <fastgltf/types.hpp>
+#include <fastgltf/tools.hpp>
 
 #include "Shader.h"
 #include "Camera.h"
@@ -187,7 +192,7 @@ std::string imagePath = "assets/textures/boxTex.png";
 std::string image2Path = "assets/textures/boxSpecular.png";
 std::string image3Path = "assets/textures/boxEmission.png";
 
-std::string testModel = "assets/models/helmet/DamagedHelmet.gltf";
+std::string testModel = "assets/models/flightHelm/FlightHelmet.gltf";
 
 bool firstMouseInput = true;
 float lastMouseX = 400, lastMouseY = 400;
@@ -199,307 +204,454 @@ Camera mainCamera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
-static std::string GetFilePathExtension(const std::string& fileName)
+struct IndirectDrawCommand
 {
-	if (fileName.find_last_of(".") != std::string::npos)
-	{
-		return fileName.substr(fileName.find_last_of(".") + 1);
-	}
-	return "";
-}
+	std::uint32_t count;
+	std::uint32_t instanceCount;
+	std::uint32_t firstIndex;
+	std::int32_t baseVertex;
+	std::uint32_t baseInstance;
+};
 
-static void PrintNodes(const tinygltf::Scene& scene)
+struct Vertex
 {
-	for (size_t i = 0; i < scene.nodes.size(); i++)
-	{
-		printf("node: %d\n\n", scene.nodes[i]);
-	}
-}
+	fastgltf::math::fvec3 position;
+	fastgltf::math::fvec3 normal;
+	fastgltf::math::fvec4 tangent;
+	fastgltf::math::fvec2 uv;
+};
 
-static void CheckError(std::string descript)
+struct Primitive
 {
-	GLenum err = glGetError();
+	IndirectDrawCommand draw;
+	GLenum primitiveType;
+	GLenum indexType;
+	GLuint vertexArray;
 
-	if (err != GL_NO_ERROR)
-	{
-		printf("OGL Error %s: %d (%d)", descript.c_str(), err, err);
-		throw; // lol 
-	}
-}
+	GLuint vertexBuffer;
+	GLuint indexBuffer;
 
-tinygltf::Model LoadModel(std::string path)
+	std::size_t materialUniformsIndex;
+	GLuint albedoTexture;
+	GLuint metallicRoughnessTexture;
+	GLuint emissiveTexture;
+	GLuint occlusionTexture;
+	GLuint normalTexture;
+};
+
+struct Mesh
 {
-	tinygltf::Model model;
-	tinygltf::TinyGLTF loader;
-	std::string err;
-	std::string warn;
+	GLuint drawBuffer;
+	std::vector<Primitive> primitives;
+};
 
-	std::string exten = GetFilePathExtension(path);
-
-	bool ret = false;
-	if (exten.compare("glb") == 0)
-	{
-		// Binary
-		ret = loader.LoadBinaryFromFile(&model, &err, &warn, path);
-	}
-	else
-	{
-		// ASCII
-		ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
-	}
-
-	if (!warn.empty())
-	{
-		printf("gLTF Warn: %s\n", warn.c_str());
-	}
-
-	if (!err.empty())
-	{
-		printf("gLTF Error: %s\n", err.c_str());
-	}
-
-	if (!ret)
-	{
-		printf("Failed to parse gLTF!\n");
-	}
-
-	printf("Success!\n Model loaded: %s\n", path.c_str());
-
-	//PrintNodes(model.scenes[model.defaultScene > -1 ? model.defaultScene : 0]);
-
-	return model;
-}
-
-// Todo; if it's missing some of the textures the output is black + doesn't seem like models with multiple meshes wants to work?
-void BindMesh(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mesh& mesh)
+struct Texture
 {
-	for (size_t i = 0; i < model.bufferViews.size(); i++)
-	{
-		const tinygltf::BufferView& bufferView = model.bufferViews[i];
+	GLuint texture;
+};
 
-		if (bufferView.target == 0)
+enum MaterialUniformFlags : std::uint32_t
+{
+	None = 0 << 0,
+	HasBaseColorTexture = 1 << 0,
+};
+
+struct MaterialUniforms
+{
+	fastgltf::math::fvec4 baseColorFactor;
+	float alphaCutoff = 0.0f;
+	std::uint32_t flags = 0;
+
+	fastgltf::math::fvec2 padding;
+};
+
+struct Viewer
+{
+	fastgltf::Asset asset;
+
+	std::vector<Mesh> meshes;
+	std::vector<Texture> textures;
+
+	std::vector<MaterialUniforms> materials;
+	std::vector<GLuint> materialBuffers;
+
+	GLint uvOffsetUniform = GL_NONE;
+	GLint uvScaleUniform = GL_NONE;
+	GLint uvRotationUniform = GL_NONE;
+
+	std::size_t sceneIndex = 0;
+	std::size_t materialVariant = 0;
+};
+
+bool LoadGltf(Viewer* viewer, std::filesystem::path filePath)
+{
+	if (!std::filesystem::exists(filePath))
+	{
+		wprintf(L"Failed to find %s!\n", filePath.wstring().c_str());
+		return false;
+	}
+
+	wprintf(L"Loading %s..\n", filePath.wstring().c_str());
+
+	// Parse gLTF file
+	{
+		static constexpr auto supportedExtensions = fastgltf::Extensions::KHR_mesh_quantization | fastgltf::Extensions::KHR_texture_transform | fastgltf::Extensions::KHR_materials_variants | fastgltf::Extensions::MSFT_packing_occlusionRoughnessMetallic;
+
+		fastgltf::Parser parser(supportedExtensions);
+
+		constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble | fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers | fastgltf::Options::LoadExternalImages | fastgltf::Options::GenerateMeshIndices;
+
+		auto gltfFile = fastgltf::MappedGltfFile::FromPath(filePath);
+		if (!bool(gltfFile))
 		{
-			printf("WARNING! Buffer View target is zero!\n Unsupported bufferView\n"); // spec2.0
-			continue;
+			std::cerr << "Failed to open gLTF file: " << fastgltf::getErrorMessage(gltfFile.error()) << std::endl;
+			return false;
 		}
 
-		const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-		//printf("Buffer view target, %d\n", bufferView.target);
-
-		GLuint vbo;
-		glGenBuffers(1, &vbo);
-		vbos[i] = vbo;
-		glBindBuffer(bufferView.target, vbo);
-
-		//printf("Buffer size: %zu \n Buffer View offset: %zu\n", buffer.data.size(), bufferView.byteOffset);
-		glBufferData(bufferView.target, bufferView.byteLength, &buffer.data.at(0) + bufferView.byteOffset, GL_STATIC_DRAW);
-
-		for (size_t i = 0; i < mesh.primitives.size(); i++)
+		auto asset = parser.loadGltf(gltfFile.get(), filePath.parent_path(), gltfOptions);
+		if (asset.error() != fastgltf::Error::None)
 		{
-			tinygltf::Primitive primitve = mesh.primitives[i];
-			tinygltf::Accessor indAccessor = model.accessors[primitve.indices];
+			std::cerr << "Failed to open gLTF file: " << fastgltf::getErrorMessage(asset.error()) << std::endl;
+			return false;
+		}
+		viewer->asset = std::move(asset.get());
+	}
 
-			for (auto& attr : primitve.attributes)
+	return true;
+}
+
+bool LoadMesh(Viewer* viewer, fastgltf::Mesh& mesh)
+{
+	auto& asset = viewer->asset;
+	Mesh outMesh = {};
+	outMesh.primitives.resize(mesh.primitives.size());
+
+	for (auto it = mesh.primitives.begin(); it != mesh.primitives.end(); it++)
+	{
+		auto* posIt = it->findAttribute("POSITION");
+		assert(posIt != it->attributes.end()); // Mesh primitive is needed to hold pos attribute
+		assert(it->indicesAccessor.has_value()); // GenerateMeshIndicies was specified, so we SHOULD have it
+
+		// Generate VAO
+		GLuint VAO = GL_NONE;
+		glCreateVertexArrays(1, &VAO);
+
+		std::size_t baseColorTexIndex = 0;
+
+		// Get output primitive
+		auto index = std::distance(mesh.primitives.begin(), it);
+		auto& primitive = outMesh.primitives[index];
+		primitive.primitiveType = fastgltf::to_underlying(it->type);
+		primitive.vertexArray = VAO;
+
+		if (it->materialIndex.has_value())
+		{
+			primitive.materialUniformsIndex = it->materialIndex.value() + 1;
+			auto& material = viewer->asset.materials[it->materialIndex.value()];
+
+			// TODO: move into a helper function instead of having all of them typed out
+			auto& baseColorTex = material.pbrData.baseColorTexture;
+			if (baseColorTex.has_value())
 			{
-				tinygltf::Accessor accessor = model.accessors[attr.second];
-				int bStride = accessor.ByteStride(model.bufferViews[accessor.bufferView]);
+				auto& texture = viewer->asset.textures[baseColorTex->textureIndex];
 
-				glBindBuffer(GL_ARRAY_BUFFER, vbos[accessor.bufferView]);
+				if (!texture.imageIndex.has_value())
+					printf("Couldn't find an albedo!\n");
 
-				int size = (accessor.type == TINYGLTF_TYPE_SCALAR) ? 1 : accessor.type;
+				primitive.albedoTexture = viewer->textures[texture.imageIndex.value()].texture;
 
-				int loc = -1;
-				if (attr.first.compare("POSITION") == 0) loc = 0;
-				if (attr.first.compare("NORMAL") == 0) loc = 1;
-				if (attr.first.compare("TEXCOORD_0") == 0) loc = 2;
-				if (attr.first.compare("TANGENT") == 0) loc = 3; // Should probably check if this exists... use mikktspace if they're not there
-
-				if (loc > -1)
-				{
-					glEnableVertexAttribArray(loc);
-					glVertexAttribPointer(loc, size, accessor.componentType, accessor.normalized ? GL_TRUE : GL_FALSE, bStride, BUFFER_OFFSET(accessor.byteOffset));
-				}
-				else
-				{
-					printf("WARNING!\n Vertex Attribute Array missing! %s\n", attr.first.c_str());
-				}
+				if (baseColorTex->transform && baseColorTex->transform->texCoordIndex.has_value()) baseColorTexIndex = baseColorTex->transform->texCoordIndex.value();
+				else baseColorTexIndex = material.pbrData.baseColorTexture->texCoordIndex;
 			}
 
-			if (primitve.material >= 0 && primitve.material < model.materials.size())
+			auto& metallicRougnessTexture = material.pbrData.metallicRoughnessTexture;
+			if (metallicRougnessTexture.has_value())
 			{
-				const tinygltf::Material& material = model.materials[primitve.material];
+				auto& texture = viewer->asset.textures[metallicRougnessTexture->textureIndex];
 
-				auto bindTexture = [&](int textureIndex, GLenum textureUnit, GLenum uniformLocation)
-					{
-						if (textureIndex >= 0 && textureIndex < model.textures.size())
-						{
-							const tinygltf::Texture& texture = model.textures[textureIndex];
+				if (!texture.imageIndex.has_value())
+					printf("Couldn't find a metallic roughness!\n");
 
-							if (texture.source >= 0 && texture.source < model.images.size())
-							{
-								const tinygltf::Image& image = model.images[texture.source];
-								GLuint texID;
-								glGenTextures(1, &texID);
+				primitive.metallicRoughnessTexture = viewer->textures[texture.imageIndex.value()].texture;
+			}
 
-								glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-								glActiveTexture(textureUnit);
-								glBindTexture(GL_TEXTURE_2D, texID);
+			auto& normalColorTex = material.normalTexture;
+			if (normalColorTex.has_value())
+			{
+				auto& texture = viewer->asset.textures[normalColorTex->textureIndex];
 
-								glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image.image[0]);
+				if (!texture.imageIndex.has_value()) 
+					printf("Couldn't find a normal!\n");
 
-								glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-								glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-								glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-								glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				primitive.normalTexture = viewer->textures[texture.imageIndex.value()].texture;
+			}
 
-								glGenerateMipmap(GL_TEXTURE_2D);
+			auto& emissiveTexture = material.emissiveTexture;
+			if (emissiveTexture.has_value())
+			{
+				auto& texture = viewer->asset.textures[emissiveTexture->textureIndex];
 
-								glBindTexture(GL_TEXTURE_2D, texID);
+				if (!texture.imageIndex.has_value()) 
+					printf("Couldn't find an emissive!\n");
 
-								glActiveTexture(textureUnit);
-								glUniform1i(uniformLocation, textureUnit);
+				primitive.emissiveTexture = viewer->textures[texture.imageIndex.value()].texture;
+			}
 
-							}
-						}
-					};
+			auto& occlusionTexture = material.occlusionTexture;
+			if (occlusionTexture.has_value())
+			{
+				auto& texture = viewer->asset.textures[occlusionTexture->textureIndex];
 
-				// Albedo
-				if (material.values.find("baseColorTexture") != material.values.end())
+				if (!texture.imageIndex.has_value())
+					printf("Couldn't find an occlusion!\n");
+
+				primitive.occlusionTexture = viewer->textures[texture.imageIndex.value()].texture;
+			}
+
+		}
+		else primitive.materialUniformsIndex = 0;
+
+		{
+			// Position
+			auto& positionAccesor = asset.accessors[posIt->accessorIndex];
+			if (!positionAccesor.bufferViewIndex.has_value()) continue;
+
+			// Create the vertex buffer for primitive, then copy into mapped buffer
+			glCreateBuffers(1, &primitive.vertexBuffer);
+			glNamedBufferData(primitive.vertexBuffer, positionAccesor.count * sizeof(Vertex), nullptr, GL_STATIC_DRAW);
+
+			auto* vertices = static_cast<Vertex*>(glMapNamedBuffer(primitive.vertexBuffer, GL_WRITE_ONLY));
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, positionAccesor, [&](fastgltf::math::fvec3 pos, std::size_t id)
 				{
-					int textureIndex = material.values.at("baseColorTexture").TextureIndex();
-					bindTexture(textureIndex, GL_TEXTURE0, 0);
-				}
+					vertices[id].position = fastgltf::math::fvec3(pos.x(), pos.y(), pos.z());
+					vertices[id].uv = fastgltf::math::fvec2();
+				});
+			glUnmapNamedBuffer(primitive.vertexBuffer);
 
-				// AO
-				if (material.additionalValues.find("occlusionTexture") != material.additionalValues.end())
-				{
-					int textureIndex = material.additionalValues.at("occlusionTexture").TextureIndex();
-					bindTexture(textureIndex, GL_TEXTURE1, 1);
-				}
+			glEnableVertexArrayAttrib(VAO, 0);
+			glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+			glVertexArrayAttribBinding(VAO, 0, 0);
 
-				// Emissive
-				if (material.additionalValues.find("emissiveTexture") != material.additionalValues.end())
-				{
-					int textureIndex = material.additionalValues.at("emissiveTexture").TextureIndex();
-					bindTexture(textureIndex, GL_TEXTURE2, 2);
-				}
+			glVertexArrayVertexBuffer(VAO, 0, primitive.vertexBuffer, 0, sizeof(Vertex));
+		}
 
-				// Metallic-Roughness
-				if (material.values.find("metallicRoughnessTexture") != material.values.end())
-				{
-					int textureIndex = material.values.at("metallicRoughnessTexture").TextureIndex();
-					bindTexture(textureIndex, GL_TEXTURE3, 3);
-				}
+		auto texCoordAttr = std::string("TEXCOORD_") + std::to_string(baseColorTexIndex);
+		if (const auto* texCoord = it->findAttribute(texCoordAttr); texCoord != it->attributes.end())
+		{
+			// Tex-Coord
+			auto& texCoordAccessor = asset.accessors[texCoord->accessorIndex];
+			if (!texCoordAccessor.bufferViewIndex.has_value()) continue;
 
-				// Normal
-				if (material.additionalValues.find("normalTexture") != material.additionalValues.end())
+			auto* vertices = static_cast<Vertex*>(glMapNamedBuffer(primitive.vertexBuffer, GL_WRITE_ONLY));
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(asset, texCoordAccessor, [&](fastgltf::math::fvec2 uv, std::size_t id)
 				{
-					int textureIndex = material.additionalValues.at("normalTexture").TextureIndex();
-					bindTexture(textureIndex, GL_TEXTURE4, 4);
+					vertices[id].uv = fastgltf::math::fvec2(uv.x(), uv.y());
+				});
+			glUnmapNamedBuffer(primitive.vertexBuffer);
+
+			glEnableVertexArrayAttrib(VAO, 1);
+			glVertexArrayAttribFormat(VAO, 1, 2, GL_FLOAT, GL_FALSE, 0);
+			glVertexArrayAttribBinding(VAO, 1, 1);
+
+			glVertexArrayVertexBuffer(VAO, 1, primitive.vertexBuffer, offsetof(Vertex, uv), sizeof(Vertex));
+		}
+
+		if (const auto* normalIt = it->findAttribute("NORMAL"); normalIt != it->attributes.end())
+		{
+			auto& normalAccessor = asset.accessors[normalIt->accessorIndex];
+			if (!normalAccessor.bufferViewIndex.has_value()) continue;
+
+			auto* vertices = static_cast<Vertex*>(glMapNamedBuffer(primitive.vertexBuffer, GL_WRITE_ONLY));
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, normalAccessor, [&](fastgltf::math::fvec3 normal, std::size_t id)
+				{
+					vertices[id].normal = fastgltf::math::fvec3(normal.x(), normal.y(), normal.z());
+				});
+			glUnmapNamedBuffer(primitive.vertexBuffer);
+
+			glEnableVertexArrayAttrib(VAO, 2);
+			glVertexArrayAttribFormat(VAO, 2, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+			glVertexArrayAttribBinding(VAO, 2, 0);
+
+			glVertexArrayVertexBuffer(VAO, 2, primitive.vertexBuffer, offsetof(Vertex, normal), sizeof(Vertex));
+		} 
+
+		if (const auto* tangentIt = it->findAttribute("TANGENT"); tangentIt != it->attributes.end())
+		{
+			auto& tangentAccessor = asset.accessors[tangentIt->accessorIndex];
+			if (!tangentAccessor.bufferViewIndex.has_value()) continue;
+
+			auto* vertices = static_cast<Vertex*>(glMapNamedBuffer(primitive.vertexBuffer, GL_WRITE_ONLY));
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, tangentAccessor, [&](fastgltf::math::fvec4 tangent, std::size_t id)
+				{
+					vertices[id].tangent = fastgltf::math::fvec4(tangent.x(), tangent.y(), tangent.z(), tangent.w());
+				});
+			glUnmapNamedBuffer(primitive.vertexBuffer);
+
+			glEnableVertexArrayAttrib(VAO, 3);
+			glVertexArrayAttribFormat(VAO, 3, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
+			glVertexArrayAttribBinding(VAO, 3, 0);
+
+			glVertexArrayVertexBuffer(VAO, 3, primitive.vertexBuffer, offsetof(Vertex, tangent), sizeof(Vertex));
+		}
+
+		// Gen indirect draw command
+		auto& draw = primitive.draw;
+		draw.instanceCount = 1;
+		draw.baseInstance = 0;
+		draw.baseVertex = 0;
+		draw.firstIndex = 0;
+
+		auto& indexAccessor = asset.accessors[it->indicesAccessor.value()];
+		if (!indexAccessor.bufferViewIndex.has_value()) return false;
+		draw.count = static_cast<std::uint32_t>(indexAccessor.count);
+
+		// Create index buffer, then copy indicies into it
+		glCreateBuffers(1, &primitive.indexBuffer);
+		if (indexAccessor.componentType == fastgltf::ComponentType::UnsignedByte || indexAccessor.componentType == fastgltf::ComponentType::UnsignedShort)
+		{
+			primitive.indexType = GL_UNSIGNED_SHORT;
+			glNamedBufferData(primitive.indexBuffer, static_cast<GLsizeiptr>(indexAccessor.count * sizeof(std::uint16_t)), nullptr, GL_STATIC_DRAW);
+			auto* indices = static_cast<std::uint16_t*>(glMapNamedBuffer(primitive.indexBuffer, GL_WRITE_ONLY));
+			fastgltf::copyFromAccessor<std::uint16_t>(asset, indexAccessor, indices);
+			glUnmapNamedBuffer(primitive.indexBuffer);
+		}
+
+		glVertexArrayElementBuffer(VAO, primitive.indexBuffer);
+	}
+
+	// Create buffer with all primitive structs
+	glCreateBuffers(1, &outMesh.drawBuffer);
+	glNamedBufferData(outMesh.drawBuffer, static_cast<GLsizeiptr>(outMesh.primitives.size() * sizeof(Primitive)), outMesh.primitives.data(), GL_STATIC_DRAW);
+
+	viewer->meshes.emplace_back(outMesh);
+
+	return true;
+}
+
+bool LoadGltfImage(Viewer* viewer, fastgltf::Image& image)
+{
+	auto getLevelCount = [](int width, int height) -> GLsizei
+		{
+			return static_cast<GLsizei>(1 + floor(log2(width > height ? width : height)));
+		};
+
+	GLuint texture;
+	glCreateTextures(GL_TEXTURE_2D, 1, &texture);
+	std::visit(fastgltf::visitor{
+		[](auto& arg) {},
+		[&](fastgltf::sources::URI& filePath) 
+		{
+			assert(filePath.fileByteOffset == 0); 
+			assert(filePath.uri.isLocalPath()); 
+			int width, height, nrChannels;
+
+			const std::string path(filePath.uri.path().begin(), filePath.uri.path().end()); 
+			unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+			glTextureStorage2D(texture, getLevelCount(width, height), GL_RGBA8, width, height);
+			glTextureSubImage2D(texture, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		},
+		[&](fastgltf::sources::Array& vector) {
+			int width, height, nrChannels;
+			unsigned char* data = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(vector.bytes.data()), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+			glTextureStorage2D(texture, getLevelCount(width, height), GL_RGBA8, width, height);
+			glTextureSubImage2D(texture, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		},
+		[&](fastgltf::sources::BufferView& view) {
+			auto& bufferView = viewer->asset.bufferViews[view.bufferViewIndex];
+			auto& buffer = viewer->asset.buffers[bufferView.bufferIndex];
+			// Load buffer data for texture
+			std::visit(fastgltf::visitor {
+				[](auto& arg) {},
+				[&](fastgltf::sources::Array& vector) {
+					int width, height, nrChannels;
+					unsigned char* data = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(vector.bytes.data() + bufferView.byteOffset),
+																static_cast<int>(bufferView.byteLength), &width, &height, &nrChannels, 4);
+					glTextureStorage2D(texture, getLevelCount(width, height), GL_RGBA8, width, height);
+					glTextureSubImage2D(texture, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+					stbi_image_free(data);
 				}
+			}, buffer.data);
+		},
+	}, image.data);
+
+	glGenerateTextureMipmap(texture);
+
+	viewer->textures.emplace_back(Texture{ texture });
+	return true;
+}
+
+bool LoadMaterial(Viewer* viewer, fastgltf::Material& material)
+{
+	MaterialUniforms uniforms = {};
+	uniforms.alphaCutoff = material.alphaCutoff;
+
+	uniforms.baseColorFactor = material.pbrData.baseColorFactor;
+	if (material.pbrData.baseColorTexture.has_value())
+	{
+		uniforms.flags |= MaterialUniformFlags::HasBaseColorTexture;
+	}
+
+	viewer->materials.emplace_back(uniforms);
+	return true;
+}
+
+void DrawGLTFMesh(Viewer* viewer, std::size_t meshIndex, fastgltf::math::fmat4x4 matrix)
+{
+	auto& mesh = viewer->meshes[meshIndex];
+
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, mesh.drawBuffer);
+
+	for (auto i = 0U; i < mesh.primitives.size(); i++)
+	{
+		auto& primitive = mesh.primitives[i];
+		auto& gltfPrimitive = viewer->asset.meshes[meshIndex].primitives[i];
+
+		std::size_t materialIndex;
+		auto& mappings = gltfPrimitive.mappings;
+
+		materialIndex = (!mappings.empty() && mappings[viewer->materialVariant].has_value()) ? mappings[viewer->materialVariant].value() + 1 : primitive.materialUniformsIndex;
+
+		auto& material = viewer->materialBuffers[materialIndex];
+
+		// Bind albedo texture
+		glBindTextureUnit(0, primitive.albedoTexture);
+
+		// Bind metallic roughness texture
+		glBindTextureUnit(1, primitive.metallicRoughnessTexture);
+
+		// Bind normal texture
+		glBindTextureUnit(2, primitive.normalTexture);
+
+		// Bind emissive texture
+		glBindTextureUnit(3, primitive.emissiveTexture);
+
+		// Bind occlusion texture
+		glBindTextureUnit(4, primitive.occlusionTexture);
+
+		// Bind material uniform buffer
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, material);
+		glBindVertexArray(primitive.vertexArray);
+
+		// Update texture transform uniforms
+		glUniform2f(viewer->uvOffsetUniform, 0, 0);
+		glUniform2f(viewer->uvScaleUniform, 1.0f, 1.0f);
+		glUniform1f(viewer->uvRotationUniform, 0);
+		if (materialIndex != 0)
+		{
+			auto& gltfMaterial = viewer->asset.materials[materialIndex - 1];
+			if (gltfMaterial.pbrData.baseColorTexture.has_value() && gltfMaterial.pbrData.baseColorTexture->transform)
+			{
+				auto& transform = gltfMaterial.pbrData.baseColorTexture->transform;
+				glUniform2f(viewer->uvOffsetUniform, transform->uvOffset[0], transform->uvOffset[1]);
+				glUniform2f(viewer->uvScaleUniform, transform->uvOffset[0], transform->uvScale[1]);
+				glUniform1f(viewer->uvRotationUniform, static_cast<float>(transform->rotation));
 			}
 		}
+
+		glDrawElementsIndirect(primitive.primitiveType, primitive.indexType, reinterpret_cast<const void*>(i * sizeof(Primitive)));
 	}
-}
-
-
-void BindModelNodes(std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Node& node)
-{
-	if ((node.mesh >= 0) && (node.mesh < model.meshes.size()))
-	{
-		BindMesh(vbos, model, model.meshes[node.mesh]);
-	}
-
-	for (size_t i = 0; i < node.children.size(); i++)
-	{
-		assert((node.children[i] >= 0) && (node.children[i] < model.nodes.size()));
-		BindModelNodes(vbos, model, model.nodes[node.children[i]]);
-	}
-}
-
-std::pair<GLuint, std::map<int, GLuint>> BindModel(tinygltf::Model& model)
-{
-	std::map<int, GLuint> vbos;
-	GLuint vao;
-	
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	const tinygltf::Scene& scene = model.scenes[model.defaultScene];
-	for (size_t i = 0; i < scene.nodes.size(); i++)
-	{
-		assert((scene.nodes[i] >= 0) && (scene.nodes[i] < model.nodes.size()));
-		BindModelNodes(vbos, model, model.nodes[scene.nodes[i]]);
-	}
-
-	glBindVertexArray(0);
-
-	return std::make_pair(vao, vbos);
-}
-
-void CleanupBuffers(std::pair<GLuint, std::map<int, GLuint>>& vertAndElementBuffers, tinygltf::Model& model)
-{
-	// Delete VAO
-	glDeleteVertexArrays(1, &vertAndElementBuffers.first);
-
-	// Delete VBOs
-	for (auto it = vertAndElementBuffers.second.cbegin(); it != vertAndElementBuffers.second.cend();)
-	{
-		const tinygltf::BufferView& bufferView = model.bufferViews[it->first];
-
-		if (bufferView.target != GL_ELEMENT_ARRAY_BUFFER)
-		{
-			glDeleteBuffers(1, &it->second);
-			vertAndElementBuffers.second.erase(it++);
-		}
-		else
-		{
-			it++;
-		}
-	}
-
-	// Clear map
-	vertAndElementBuffers.second.clear();
-}
-
-void DrawMesh(const std::map<int, GLuint>& vbos, tinygltf::Model& model, tinygltf::Mesh& mesh)
-{
-	for (size_t i = 0; i < mesh.primitives.size(); i++)
-	{
-		tinygltf::Primitive prim = mesh.primitives[i];
-		tinygltf::Accessor indAccessor = model.accessors[prim.indices];
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos.at(indAccessor.bufferView));
-
-		glDrawElements(prim.mode, indAccessor.count, indAccessor.componentType, BUFFER_OFFSET(indAccessor.byteOffset));
-	}
-}
-
-void DrawModelNodes(const std::pair<GLuint, std::map<int, GLuint>>& vertAndElementBuffers, tinygltf::Model& model, tinygltf::Node& node)
-{
-	if ((node.mesh >= 0) && (node.mesh < model.meshes.size()))
-	{
-		DrawMesh(vertAndElementBuffers.second, model, model.meshes[node.mesh]);
-	}
-
-	// Recursively draw child nodes
-	for (size_t i = 0; i < node.children.size(); i++)
-	{
-		DrawModelNodes(vertAndElementBuffers, model, model.nodes[node.children[i]]);
-	}
-}
-
-void DrawModel(const std::pair<GLuint, std::map<int, GLuint>>& vertAndElementBuffers, tinygltf::Model& model)
-{
-	glBindVertexArray(vertAndElementBuffers.first);
-
-	const tinygltf::Scene& scene = model.scenes[model.defaultScene];
-	for (size_t i = 0; i < scene.nodes.size(); i++)
-	{
-		DrawModelNodes(vertAndElementBuffers, model, model.nodes[scene.nodes[i]]);
-	}
-
-	glBindVertexArray(0);
 }
 
 unsigned int GenerateCubemap(std::vector<std::string> faces) 
@@ -559,6 +711,10 @@ int main()
 		printf("Failed to initialize GLAD!");
 		return -1;
 	}
+
+	Viewer viewer;
+	auto gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.gltf");
+	glfwSetWindowUserPointer(window, &viewer);
 
 	//glViewport(0, 0, 800, 600);
 	std::cout << "ver: " << glGetString(GL_VERSION) << std::endl;
@@ -651,21 +807,75 @@ int main()
 	skyboxShader.SetInt("skybox", 0);
 
 	// Load gLTF model
-	mainShader.Use();
 
-	mainShader.SetFloat("reflectionStrength", 1.0f);
-	mainShader.SetVec3("inDiffuseColor", 0.5f, 0.2f, 0.0f);
-	mainShader.SetFloat("specularPower", 32.0f);
-	mainShader.SetFloat("gamma", true);
+	//auto start = std::chrono::high_resolution_clock::now();
+	//tinygltf::Model exModel = LoadModel(testModel);
+	//auto vertElementbuffers = BindModel(exModel);
+	//auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+	//printf("tinyGLTF loaded in %lld ms\n", diff.count());
 
-	tinygltf::Model exModel = LoadModel(testModel);
-	auto vertElementbuffers = BindModel(exModel);
-
-	printf("Number of meshes: %zu\n", exModel.meshes.size());
-	for (size_t i = 0; i < exModel.meshes.size(); ++i)
+	// Load gLTF model
+	auto start = std::chrono::high_resolution_clock::now();
+	if (!LoadGltf(&viewer, gltfFile))
 	{
-		printf("Mesh %zu: %s\n", i, exModel.meshes[i].name.c_str());
+		printf("Failed to parse GLTF!\n");
+		return -1;
 	}
+
+	// Default material
+	auto& defaultMaterial = viewer.materials.emplace_back();
+	defaultMaterial.baseColorFactor = fastgltf::math::fvec4(1.0f);
+	defaultMaterial.alphaCutoff = 0.0f;
+	defaultMaterial.flags = 0;
+
+	// Load images first
+	auto& asset = viewer.asset;
+	for (auto& image : asset.images)
+	{
+		LoadGltfImage(&viewer, image);
+	}
+	for (auto& material : asset.materials)
+	{
+		LoadMaterial(&viewer, material);
+	}
+	for (auto& mesh : asset.meshes)
+	{
+		LoadMesh(&viewer, mesh);
+	}
+	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+	printf("fastGLTF loaded in %lld ms\n", diff.count());
+
+	// Create material uniform buffer
+	viewer.materialBuffers.resize(viewer.materials.size(), GL_NONE);
+	glCreateBuffers(static_cast<GLsizei>(viewer.materials.size()), viewer.materialBuffers.data());
+	for (auto i = 0UL; i < viewer.materialBuffers.size(); i++)
+	{
+		glNamedBufferStorage(viewer.materialBuffers[i], static_cast<GLsizeiptr>(sizeof(MaterialUniforms)), &viewer.materials[i], GL_MAP_WRITE_BIT);
+	}
+
+	viewer.uvOffsetUniform = glGetUniformLocation(mainShader.GetID(), "uvOffset");
+	viewer.uvScaleUniform = glGetUniformLocation(mainShader.GetID(), "uvScale");
+	viewer.uvRotationUniform = glGetUniformLocation(mainShader.GetID(), "uvRotation");
+	mainShader.Use();
+	mainShader.SetInt("albedoTexture", 0);
+	mainShader.SetInt("metallicRoughnessTexture", 1);
+	mainShader.SetInt("normalTexture", 2);
+	mainShader.SetInt("emissiveTexture", 3);
+	mainShader.SetInt("occlusionTexture", 4);
+	mainShader.SetInt("skybox", 5);
+
+	auto& sceneIndex = viewer.sceneIndex = viewer.asset.defaultScene.value_or(0);
+
+	//mainShader.SetFloat("reflectionStrength", 1.0f);
+	//mainShader.SetVec3("inDiffuseColor", 0.5f, 0.2f, 0.0f);
+	//mainShader.SetFloat("specularPower", 32.0f);
+	//mainShader.SetFloat("gamma", true);
+
+	//printf("Number of meshes: %zu\n", exModel.meshes.size());
+	//for (size_t i = 0; i < exModel.meshes.size(); ++i)
+	//{
+	//	printf("Mesh %zu: %s\n", i, exModel.meshes[i].name.c_str());
+	//}
 
 	FPSCounter fpsCounter;
 	glEnable(GL_DEPTH_TEST);
@@ -719,7 +929,9 @@ int main()
 		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		mainShader.SetMatrix4("model", model);
 
-		DrawModel(vertElementbuffers, exModel);
+		//DrawModel(exModel);
+
+		//DrawModel(vertElementbuffers, exModel);
 
 		//// gLTF object -- Scaled
 		//glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -736,6 +948,15 @@ int main()
 		//outlineShader.SetMatrix4("model", model);
 
 		//DrawModel(vertElementbuffers, exModel);
+
+		if (!asset.scenes.empty() && sceneIndex < asset.scenes.size())
+		{
+			fastgltf::iterateSceneNodes(asset, sceneIndex, fastgltf::math::fmat4x4(), [&](fastgltf::Node& node, fastgltf::math::fmat4x4 matrix)
+				{
+					if (node.meshIndex.has_value()) 
+						DrawGLTFMesh(&viewer, *node.meshIndex, matrix);
+				});
+		}
 
 		//glStencilMask(0xFF);
 		//glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -759,6 +980,7 @@ int main()
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0); // Revert to default framebuffer
 
+		//Render frame buffer
 		framebufferShader.Use();
 		glBindVertexArray(screenQuadVAO);
 		glDisable(GL_DEPTH_TEST);
@@ -792,7 +1014,7 @@ int main()
 	}
 
 	// Deallocate
-	glDeleteVertexArrays(1, &vertElementbuffers.first);
+	//glDeleteVertexArrays(1, &vertElementbuffers.first);
 	glDeleteVertexArrays(1, &skyboxVAO);
 	glDeleteVertexArrays(1, &screenQuadVAO);
 	glDeleteBuffers(1, &skyboxVBO);
@@ -802,7 +1024,19 @@ int main()
 	//glDeleteVertexArrays(1, &lightVAO);
 	//glDeleteBuffers(1, &VBO);
 
-	CleanupBuffers(vertElementbuffers, exModel);
+	for (auto& mesh : viewer.meshes)
+	{
+		glDeleteBuffers(1, &mesh.drawBuffer);
+
+		for (auto& primitive : mesh.primitives)
+		{
+			glDeleteVertexArrays(1, &primitive.vertexArray);
+			glDeleteBuffers(1, &primitive.indexBuffer);
+			glDeleteBuffers(1, &primitive.vertexBuffer);
+		}
+	}
+
+	//CleanupBuffers(vertElementbuffers, exModel);
 	mainShader.Delete();
 
 	glfwTerminate();
