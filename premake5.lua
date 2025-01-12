@@ -10,8 +10,6 @@ IncludeDirs["GLFW"] = "thirdparty/GLFW/include"
 IncludeDirs["GLAD"] = "thirdparty/GLAD/include"
 IncludeDirs["STB"] = "thirdparty/stb"
 IncludeDirs["GLM"] = "thirdparty/glm"
-IncludeDirs["TinygLTF"] = "thirdparty/tinygltf"
-IncludeDirs["JsonLoader"] = "thirdparty/nl-json"
 IncludeDirs["FastGLTF"] = "thirdparty/fastgltf"
 IncludeDirs["simdJSON"] = "thirdparty/simdjson"
 
@@ -52,8 +50,6 @@ project "Glimmer"
         "%{IncludeDirs.GLAD}",
         "%{IncludeDirs.STB}",
         "%{IncludeDirs.GLM}",
-        "%{IncludeDirs.TinygLTF}",
-        "%{IncludeDirs.JsonLoader}",
         "%{IncludeDirs.FastGLTF}",
         "%{IncludeDirs.simdJSON}"
     }
