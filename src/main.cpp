@@ -15,6 +15,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include "stb_image.h"
 
 #include <fastgltf/core.hpp>
@@ -134,14 +138,14 @@ float quadVertices[] = { // vertex for a quad to fill the screen
 };
 
 std::vector<glm::vec3> staticLightPositions = {
-	glm::vec3(0.7f,  0.2f,  2.0f),
+	glm::vec3(1.0f,  1.0f,  1.0f),
 	glm::vec3(2.3f, -3.3f, -4.0f),
 	glm::vec3(-4.0f,  2.0f, -12.0f),
 	glm::vec3(0.5f,  0.8f, -3.0f)
 };
 
 std::vector<glm::vec3> lightPositions = {
-	glm::vec3(0.7f,  0.2f,  2.0f),
+	glm::vec3(1.0f,  1.0f,  1.0f),
 	glm::vec3(2.3f, -3.3f, -4.0f),
 	glm::vec3(-4.0f,  2.0f, -12.0f),
 	glm::vec3(0.0f,  0.0f, -3.0f)
@@ -170,14 +174,15 @@ void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLenum id, GLenum se
 
 GLenum polyMode = GL_FILL;
 
-int width = 800;
-int height = 600;
+int width = 1920;
+int height = 1080;
 int nChannels;
 
 unsigned int textureOne, textureTwo;
 std::string imagePath = "assets/textures/boxTex.png";
 std::string image2Path = "assets/textures/boxSpecular.png";
 std::string image3Path = "assets/textures/boxEmission.png";
+std::string uvPath = "assets/textures/uvmap.jpg";
 
 std::string testModel = "assets/models/flightHelm/FlightHelmet.gltf";
 
@@ -254,15 +259,33 @@ int main()
 	//GltfLoader gltf2Object;
 	//GltfLoader gltf3Object;
 	auto gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.gltf");
-	//auto gltf2File = std::filesystem::path("assets/models/flightHelm/FlightHelmet.gltf");
+	//auto gltfFile = std::filesystem::path("assets/models/flightHelm/FlightHelmet.gltf");
 	glfwSetWindowUserPointer(window, &viewer);
 
-	//glViewport(0, 0, 800, 600);
-	std::cout << glGetString(GL_VERSION) << std::endl;
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui::StyleColorsDark();
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; right now this being enabled breaks the mouse wrapping code..g kjsej g
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+	ImGuiStyle& style = ImGui::GetStyle();
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		style.WindowRounding = 0.0f;
+		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+	}
+
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 460");
+
+	//glViewport(0, 0, 800, 600);
+	std::cout << glGetString(GL_RENDERER) << "\n" << glGetString(GL_VERSION) << std::endl;
+
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetKeyCallback(window, KeyCallback);
-	glfwSetCursorPosCallback(window, MouseCallback);
+	//glfwSetCursorPosCallback(window, MouseCallback);
 	glfwSetScrollCallback(window, ScrollCallback);
 
 	// Setup shaders
@@ -315,22 +338,22 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
 	// Object for light source
-	//unsigned int VBO;
-	//glGenBuffers(1, &VBO);
+	unsigned int VBO;
+	glGenBuffers(1, &VBO);
 
-	//glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	//unsigned int lightVAO;
-	//glGenVertexArrays(1, &lightVAO);
-	//glBindVertexArray(lightVAO);
+	unsigned int lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
 
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	//glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 
-	//// Unbind
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
-	//glBindVertexArray(0);
+	// Unbind
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 
 	// Load skybox textures
 	unsigned int skyboxTexture = GenerateCubemap(skyboxFaces);
@@ -368,12 +391,18 @@ int main()
 	{
 		// Input process
 		ProcessInput(window);
-		mainCamera.HandleCameraInput(window);
+		//mainCamera.HandleCameraInput(window);
 
 		fpsCounter.Update();
 		std::stringstream windowTitle;
 		windowTitle << "Glimmer [ " << fpsCounter.GetFPS() << " fps ]";
 		glfwSetWindowTitle(window, windowTitle.str().c_str());
+
+		//ImGui_ImplOpenGL3_NewFrame();
+		//ImGui_ImplGlfw_NewFrame();
+		//ImGui::NewFrame();
+
+		//ImGui::ShowDemoWindow();
 
 		// Render
 		glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
@@ -405,6 +434,7 @@ int main()
 		mainShader.SetMatrix4("model", model);
 
 		gltfObject.DrawModel();
+
 
 		//model = glm::translate(model, glm::vec3(2.5f, 0.0f, 0.0f));
 		//mainShader.SetMatrix4("model", model);
@@ -449,6 +479,27 @@ int main()
 		//glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		//glEnable(GL_DEPTH_TEST);
 
+		// Light object
+		lightSourceShader.Use();
+		lightSourceShader.SetMatrix4("projection", projection);
+		lightSourceShader.SetMatrix4("view", view);
+
+		glBindVertexArray(lightVAO);
+
+		//TODO: Should eventually be changed to allow adding/ removing pointlights, but this should be simple to change		
+
+		model = glm::translate(model, lightPositions[0]);
+		model = glm::scale(model, glm::vec3(0.3f));
+		lightSourceShader.SetMatrix4("model", model);
+
+		lightPositions[0].x = sin((float)glfwGetTime() + 6) * staticLightPositions[0].x * 2.5;
+		lightPositions[0].y = sin((float)glfwGetTime() + 4) * staticLightPositions[0].y * 6;
+		lightPositions[0].z = sin((float)glfwGetTime() + 2);
+
+		glDisable(GL_CULL_FACE);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glEnable(GL_CULL_FACE);
+
 		// Skybox - Drawn last
 		glDepthFunc(GL_LEQUAL);
 		skyboxShader.Use();
@@ -475,24 +526,138 @@ int main()
 		glBindTexture(GL_TEXTURE_2D, textureCBuffer);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		// Light object
-		//lightSourceShader.Use();
-		//lightSourceShader.SetMatrix4("projection", projection);
-		//lightSourceShader.SetMatrix4("view", view);
+		// Start ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
-		//glBindVertexArray(lightVAO);
+		static ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking;
+		ImGui::Begin("Viewport", (bool*)false, flags); // TODO: Recreate on resize
+		ImGui::SetWindowSize(ImVec2(854, 480));
 
-		////TODO: Should eventually be changed to allow adding/ removing pointlights, but this should be simple to change		
+		ImVec2 viewportPos = ImGui::GetCursorScreenPos();
+		ImVec2 viewportSize = ImGui::GetContentRegionAvail();
 
-		//model = glm::translate(model, lightPositions[0]);
-		//model = glm::scale(model, glm::vec3(0.3f));
-		//lightSourceShader.SetMatrix4("model", model);
+		// TODO Should use quaternions for camera hhhhhhh
+		static bool isWarping = false;
+		if (ImGui::IsWindowHovered())
+		{
+			if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
+			{
+				double currentMouseX, currentMouseY;
+				glfwGetCursorPos(window, &currentMouseX, &currentMouseY);
 
-		//lightPositions[0].x = sin((float)glfwGetTime() + 6) * staticLightPositions[0].x * 2.5;
-		//lightPositions[0].y = sin((float)glfwGetTime() + 4) * staticLightPositions[0].y * 6;
-		//lightPositions[0].z = sin((float)glfwGetTime() + 2);
+				if (firstMouseInput)
+				{
+					lastMouseX = currentMouseX;
+					lastMouseY = currentMouseY;
+					firstMouseInput = false;
+				}
 
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
+				if (!isWarping)
+				{
+					float xOffset = static_cast<float>(currentMouseX - lastMouseX);
+					float yOffset = static_cast<float>(lastMouseY - currentMouseY);
+
+					const float speed = 0.25f;
+					xOffset *= speed;
+					yOffset *= speed;
+
+
+					yaw += xOffset;
+					pitch += yOffset;
+
+					pitch = glm::clamp(pitch, -89.0f, 89.0f);
+
+					if (pitch > 89.0f) pitch = 89.0f;
+					else if (pitch < -89.0f) pitch = -89.0f;
+
+					glm::vec3 direction;
+					direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+					direction.y = sin(glm::radians(pitch));
+					direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+					mainCamera.SetFront(glm::normalize(direction));
+				}
+
+				isWarping = false;
+
+				lastMouseX = currentMouseX;
+				lastMouseY = currentMouseY;
+
+				// Handle edge wrapping
+				if (currentMouseX <= viewportPos.x)
+				{
+					glfwSetCursorPos(window, viewportPos.x + viewportSize.x - 1, currentMouseY);
+					lastMouseX = viewportPos.x + viewportSize.x - 1;
+					isWarping = true;
+				}
+				else if (currentMouseX >= viewportPos.x + viewportSize.x - 1)
+				{
+					glfwSetCursorPos(window, viewportPos.x + 1, currentMouseY);
+					lastMouseX = viewportPos.x + 1;
+					isWarping = true;
+				}
+
+				if (currentMouseY <= viewportPos.y)
+				{
+					glfwSetCursorPos(window, currentMouseX, viewportPos.y + viewportSize.y - 1);
+					lastMouseY = viewportPos.y + viewportSize.y - 1;
+					isWarping = true;
+				}
+				else if (currentMouseY >= viewportPos.y + viewportSize.y - 1)
+				{
+					glfwSetCursorPos(window, currentMouseX, viewportPos.y + 1);
+					lastMouseY = viewportPos.y + 1;
+					isWarping = true;
+				}
+			}
+			else
+			{
+				firstMouseInput = true;
+			}
+
+			//ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+
+			const float cameraSpeed = 2.5f * io.DeltaTime;
+
+			if (ImGui::IsKeyDown(ImGuiKey_W) || (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS))
+			{
+				mainCamera.cameraPos += cameraSpeed * mainCamera.cameraFront;
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_S) || (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS))
+			{
+				mainCamera.cameraPos -= cameraSpeed * mainCamera.cameraFront;
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_A) || (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS))
+			{
+				mainCamera.cameraPos -= glm::normalize(glm::cross(mainCamera.cameraFront, mainCamera.cameraUp)) * cameraSpeed;
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_D) || (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS))
+			{
+				mainCamera.cameraPos += glm::normalize(glm::cross(mainCamera.cameraFront, mainCamera.cameraUp)) * cameraSpeed;
+			}
+		}
+		else
+		{
+			firstMouseInput = true;
+		}
+
+
+		ImGui::Image((ImTextureID)(intptr_t)textureCBuffer, viewportSize, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+
+		ImGui::End();
+
+		// Render ImGui
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			GLFWwindow* glfwCurrentContext = glfwGetCurrentContext();
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+			glfwMakeContextCurrent(glfwCurrentContext);
+		}
 
 		// Call events + swap buffers
 		glfwSwapInterval(0);
@@ -508,8 +673,12 @@ int main()
 	glDeleteBuffers(1, &screenQuadVBO);
 	glDeleteRenderbuffers(1, &rbo);
 	glDeleteFramebuffers(1, &fbo);
-	//glDeleteVertexArrays(1, &lightVAO);
-	//glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &lightVAO);
+	glDeleteBuffers(1, &VBO);
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	for (auto& mesh : viewer.meshes)
 	{
@@ -526,6 +695,7 @@ int main()
 	//CleanupBuffers(vertElementbuffers, exModel);
 	mainShader.Delete();
 
+	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
 }
@@ -595,41 +765,6 @@ unsigned int LoadTexture(char const* path)
 	}
 
 	return textureID;
-}
-
-void MouseCallback(GLFWwindow* window, double xpos, double ypos)
-{
-	if (firstMouseInput)
-	{
-		lastMouseX = xpos;
-		lastMouseY = ypos;
-		firstMouseInput = false;
-	}
-
-	float xOffset = xpos - lastMouseX;
-	float yOffset = lastMouseY - ypos;
-
-	lastMouseX = xpos;
-	lastMouseY = ypos;
-
-	const float speed = 0.1f;
-	xOffset *= speed;
-	yOffset *= speed;
-
-	yaw += xOffset;
-	pitch += yOffset;
-
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw) * cos(glm::radians(pitch)));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	
-	mainCamera.SetFront(glm::normalize(direction));
 }
 
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)

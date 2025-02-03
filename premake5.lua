@@ -12,6 +12,7 @@ IncludeDirs["STB"] = "thirdparty/stb"
 IncludeDirs["GLM"] = "thirdparty/glm"
 IncludeDirs["FastGLTF"] = "thirdparty/fastgltf"
 IncludeDirs["simdJSON"] = "thirdparty/simdjson"
+IncludeDirs["imGUI"] = "thirdparty/imgui"
 
 LibraryDirs = {}
 LibraryDirs["GLFW"] = "thirdparty/GLFW/lib-vc2022"
@@ -37,11 +38,12 @@ project "Glimmer"
 
     vpaths
     {
-        ["Headers"] = {"src/**.h", "!src/fastgltf/**", "!src/simdjson/**" },
-        ["Sources"] = {"src/**.cpp", "src/**.c", "!src/fastgltf/**", "!src/simdjson/**"},
+        ["Headers"] = {"src/**.h", "!src/fastgltf/**", "!src/simdjson/**", "!src/imgui/**" },
+        ["Sources"] = {"src/**.cpp", "src/**.c", "!src/fastgltf/**", "!src/simdjson/**", "!src/imgui/**"},
         ["Shaders"] = {"src/shaders/**"},
         ["FastGLTF"] = {"src/fastgltf/**"},
-        ["simdJSON"] = {"src/simdjson/**"} 
+        ["simdJSON"] = {"src/simdjson/**"}, 
+        ["imGUI"] = {"src/imgui/**"}
     }
 
     includedirs
@@ -51,7 +53,8 @@ project "Glimmer"
         "%{IncludeDirs.STB}",
         "%{IncludeDirs.GLM}",
         "%{IncludeDirs.FastGLTF}",
-        "%{IncludeDirs.simdJSON}"
+        "%{IncludeDirs.simdJSON}",
+        "%{IncludeDirs.imGUI}"
     }
 
     libdirs

@@ -106,6 +106,8 @@ bool GltfLoader::LoadFromPath(std::filesystem::path filePath)
 
 		viewer.asset = std::move(asset.get());
 	}
+
+	return true;
 }
 
 bool GltfLoader::LoadMeshData(fastgltf::Mesh& mesh)

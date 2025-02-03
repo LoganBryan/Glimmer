@@ -34,6 +34,7 @@ public:
 	// Temp for now, shouldn't be exposed publicly
 	glm::vec3 cameraPos;
 	glm::vec3 cameraFront;
+	glm::vec3 cameraUp;
 
 private:
 	glm::vec3 worldUp;
@@ -45,7 +46,7 @@ private:
 
 	glm::vec3 cameraRight;
 	//glm::vec3 cameraFront;
-	glm::vec3 cameraUp;
+	//glm::vec3 cameraUp;
 
 	// TODO: When counter class is updated, remove these and use that class
 	float delta = 0.0f;
