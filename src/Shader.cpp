@@ -1,11 +1,15 @@
 #include "Shader.h"
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath)
+Shader::Shader()
+{
+}
+
+void Shader::Load(const char* vertexPath, const char* fragmentPath)
 {
 	// Recieve source from path
 	std::string vertexSource;
 	std::string fragmentSource;
-	
+
 	std::ifstream vertFile;
 	std::ifstream fragFile;
 	// Allow objects to throw exceptions
@@ -26,7 +30,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 		vertexSource = vertStream.str();
 		fragmentSource = fragStream.str();
 	}
-	catch(std::ifstream::failure e)
+	catch (std::ifstream::failure e)
 	{
 		printf("Shader file failed to read!");
 	}

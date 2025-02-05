@@ -2,55 +2,91 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <mutex>
+#include <string>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <chrono>
 
-// This class is pretty rough - will fix B1
+
+
+struct CameraMatrices
+{
+	glm::mat4 projection;
+	glm::mat4 view;
+	glm::mat4 model;
+	glm::mat4 mvp;
+	glm::mat4 viewNormal;
+};
+
+
 class Camera
 {
 public:
-	Camera(glm::vec3 initialPosition);
-	glm::mat4 Update();
+	// Don't allow cloning
+	Camera(Camera& other) = delete;
 
-	void HandleCameraInput(GLFWwindow* window);
+	// Don't allow assigning
+	void operator=(const Camera&) = delete;
 
-	inline const void SetFront(glm::vec3 newFront) { cameraFront = newFront; }
-
-	inline const glm::vec3 GetFront() const { return cameraFront; }
-	inline const glm::mat4 GetViewMatrix() const { return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp); }
-	inline const glm::vec3 GetCameraPosition() const { return cameraPos; }
-
-	inline const void RecalculateRightUp()
-	{ 
-		cameraFront = glm::normalize(glm::cross(cameraFront, worldUp));
-		up = glm::normalize(glm::cross(cameraRight, cameraFront));
+	static inline Camera* GetInstance()
+	{
+		std::lock_guard<std::mutex> lock(mtx);
+		if (instance == nullptr)
+		{
+			instance = new Camera();
+		}
+		return instance;
 	}
 
-	// Temp for now, shouldn't be exposed publicly
-	glm::vec3 cameraPos;
-	glm::vec3 cameraFront;
-	glm::vec3 cameraUp;
+	inline glm::mat4 GetViewMatrix() const { return glm::lookAt(position, position + front, up); }
+	CameraMatrices GetMVP(float aspect, float nearPlane, float farPlane, const glm::mat4& model = glm::mat4(1.0f)) const;
+
+	inline const void SetFront(glm::vec3 newFront) { front = newFront; }
+	inline const glm::vec3& GetPosition() const { return position; }
+	inline const glm::vec3& GetFront() const { return front; }
+	inline const glm::vec3& GetUp() const { return up; }
+	
+	void ProcessKeyboard(GLFWwindow* window, float deltaTime);
+	void ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch = true);
+
+	inline void SetMovementSpeed(float speed) { movementSpeed = speed; }
+	inline float GetMovementSpeed() const { return movementSpeed; }
+
+	inline void SetMouseSensitivity(float sensitivity) { mouseSensitivity = sensitivity; }
+	inline float GetMouseSensitivity() const { return mouseSensitivity; }
+
+protected:
+	Camera();
+	inline ~Camera() {}
 
 private:
-	glm::vec3 worldUp;
-	glm::vec3 up;
+	static inline Camera* instance;
+	static inline std::mutex mtx;
 
-	//glm::vec3 cameraPos;
+	void UpdateCameraVectors();
+
+	// Camera Attribs
+	glm::vec3 position;
+	glm::vec3 front;
+	glm::vec3 up;
+	glm::vec3 right;
+	glm::vec3 worldUp;
+
 	glm::vec3 cameraTarget;
 	glm::vec3 cameraDirection;
 
-	glm::vec3 cameraRight;
-	//glm::vec3 cameraFront;
-	//glm::vec3 cameraUp;
+	float yaw;
+	float pitch;
 
-	// TODO: When counter class is updated, remove these and use that class
-	float delta = 0.0f;
-	float lastFrame = 0.0f;
+	float movementSpeed;
+	float mouseSensitivity;
+	float zoom;
 };
+
 
 #endif // !CAMERA_H

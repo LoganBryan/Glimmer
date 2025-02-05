@@ -57,6 +57,8 @@ bool GltfLoader::LoadModel(std::filesystem::path filePath, Shader& shader)
 	shader.SetInt("skybox", 5);
 
 	viewer.sceneIndex = viewer.asset.defaultScene.value_or(0);
+
+	return true;
 }
 
 void GltfLoader::DrawModel()

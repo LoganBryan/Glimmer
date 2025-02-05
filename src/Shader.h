@@ -17,7 +17,8 @@
 class Shader
 {
 public:
-	Shader(const char* vertexPath, const char* fragmentPath);
+	Shader();
+	void Load(const char* vertexPath, const char* fragmentPath);
 
 	inline void Use() const { glUseProgram(programID); }
 	inline void End() const { glUseProgram(0); }
