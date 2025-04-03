@@ -1,15 +1,17 @@
 #include "Application.h"
 #include "Renderer.h"
 #include "Camera.h"
+#include "GUIHandler.h"
 #include <stdio.h>
 #include <iostream>
 
-Application::Application(int width, int height, const char* title) : width(width), height(height), title(title), window(nullptr) 
+Application::Application(int width, int height, const char* title) : width(width), height(height), title(title), window(nullptr), deltaTime(0), lastFrame(0)
 {
 }
 
 Application::~Application()
 {
+	GUIHandler::Shutdown();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 }
@@ -33,6 +35,7 @@ bool Application::Init()
 		return false;
 	}
 	glfwMakeContextCurrent(window);
+	GUIHandler::GetInstance()->Init(window);
 	
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{

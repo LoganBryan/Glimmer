@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "GeometryData.h"
+#include "GUIHandler.h"
 #include "Utils.h"
 #include "Camera.h"
 #include <stb_image.h>
@@ -13,13 +14,19 @@ std::vector<std::string> skyboxFaces = {
 	"assets/textures/skybox/back.jpg"
 };
 
-Renderer::Renderer(GLFWwindow* window) : window(window)
+Renderer::Renderer(GLFWwindow* window) : window(window), skyboxTexture(0), skyboxVAO(0), skyboxVBO(0)
 {
 }
 
 Renderer::~Renderer()
 {
 	// Delete buffers, shaders etc...
+
+	skyboxShader.Delete();
+	glDeleteTextures(1, &skyboxTexture);
+	skyboxTexture = 0;
+	glDeleteVertexArrays(1, &skyboxVAO);
+	glDeleteBuffers(1, &skyboxVBO);
 }
 
 void Renderer::Init()
@@ -103,4 +110,13 @@ void Renderer::Render(float width, float height)
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 	glDepthFunc(GL_LESS);
+
+	GUIHandler* gui = GUIHandler::GetInstance();
+	
+	gui->NewFrame();
+	gui->BeginFrame("Test Window", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking, ImVec2(854, 480));
+	ImGui::Text("Test!");
+	gui->EndFrame();
+
+	gui->Render();
 }

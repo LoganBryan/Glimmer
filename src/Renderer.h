@@ -29,7 +29,6 @@ public:
 private:
 	GLFWwindow* window;
 
-	// TODO: clean me on destroy!
 	Shader skyboxShader;
 	unsigned int skyboxTexture;
 	unsigned int skyboxVAO, skyboxVBO;
