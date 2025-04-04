@@ -33,21 +33,35 @@ project "Glimmer"
         "src/**.cpp",
         "src/**.c",
         "src/**.hpp",
-        "src/shaders/**"
+        "src/shaders/**",
+        "thirdparty/imgui/**.cpp",
+        "thirdparty/imgui/**.c",
+        "thirdparty/fastgltf/**.cpp",
+        "thirdparty/fastgltf/**.c",
+        "thirdparty/simdjson/**.cpp",
+        "thirdparty/simdjson/**.c",
+        "thirdparty/stb.cpp",
+        "thirdparty/glad.c"
     }
 
     vpaths
     {
-        ["Headers"] = {"src/**.h", "!src/fastgltf/**", "!src/simdjson/**", "!src/imgui/**" },
-        ["Sources"] = {"src/**.cpp", "src/**.c", "!src/fastgltf/**", "!src/simdjson/**", "!src/imgui/**"},
+        ["Headers/Application"] = {"src/Application/**.h"},
+        ["Headers/Model"] = {"src/Model/**.h"},
+        ["Sources/Application"] = {"src/Application/**.cpp"},
+        ["Sources/Model"] = {"src/Model/**.cpp"},
         ["Shaders"] = {"src/shaders/**"},
         ["FastGLTF"] = {"src/fastgltf/**"},
         ["simdJSON"] = {"src/simdjson/**"}, 
-        ["imGUI"] = {"src/imgui/**"}
+        ["ThirdParty/ImGUI"] = {"thirdparty/imgui/**"},
+        ["ThirdParty/FastGLTF"] = {"thirdparty/fastgltf/**"},
+        ["ThirdParty/SIMDJSON"] = {"thirdparty/simdjson/**"},
+        ["ThirdParty"] = {"thirdparty/stb.cpp", "thirdparty/glad.c"}
     }
 
     includedirs
     {
+        "src",
         "%{IncludeDirs.GLFW}",
         "%{IncludeDirs.GLAD}",
         "%{IncludeDirs.STB}",
@@ -69,6 +83,7 @@ project "Glimmer"
 
     filter "system:windows"
         systemversion "latest"
+        buildoptions {"/MP"}
         defines
         {
             "GLIMMER_PLATFORM_WINDOWS"

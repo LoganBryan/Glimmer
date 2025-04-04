@@ -15,7 +15,7 @@
 #include <string>
 
 #include "Shader.h"
-#include "GltfLoader.h"
+#include "Model/GltfLoader.h"
 
 class Renderer
 {
