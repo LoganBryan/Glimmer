@@ -1,0 +1,49 @@
+﻿  Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr.h
+  * Building openxr.h
+  * options.versions          = .*
+  * options.emitversions      = .*
+  * options.defaultExtensions = openxr
+  * options.addExtensions     = _nomatch_^
+  * options.removeExtensions  = _nomatch_^
+  * options.emitExtensions    = .*
+  Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_loader_negotiation.h
+  * Building openxr_loader_negotiation.h
+  * options.versions          = .*
+  * options.emitversions      = .*
+  * options.defaultExtensions = openxr
+  * options.addExtensions     = _nomatch_^
+  * options.removeExtensions  = _nomatch_^
+  * options.emitExtensions    = .*
+  Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_platform.h
+  * Building openxr_platform.h
+  * options.versions          = .*
+  * options.emitversions      = .*
+  * options.defaultExtensions = openxr
+  * options.addExtensions     = _nomatch_^
+  * options.removeExtensions  = _nomatch_^
+  * options.emitExtensions    = .*
+  Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection.h
+  * Building openxr_reflection.h
+  * options.versions          = .*
+  * options.emitversions      = .*
+  * options.defaultExtensions = openxr
+  * options.addExtensions     = _nomatch_^
+  * options.removeExtensions  = _nomatch_^
+  * options.emitExtensions    = .*
+  Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_parent_structs.h
+  * Building openxr_reflection_parent_structs.h
+  * options.versions          = .*
+  * options.emitversions      = .*
+  * options.defaultExtensions = openxr
+  * options.addExtensions     = _nomatch_^
+  * options.removeExtensions  = _nomatch_^
+  * options.emitExtensions    = .*
+  Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_structs.h
+  * Building openxr_reflection_structs.h
+  * options.versions          = .*
+  * options.emitversions      = .*
+  * options.defaultExtensions = openxr
+  * options.addExtensions     = _nomatch_^
+  * options.removeExtensions  = _nomatch_^
+  * options.emitExtensions    = .*
+  Building Custom Rule C:/Users/logan/Desktop/workspace/include/openxr/CMakeLists.txt

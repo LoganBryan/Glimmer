@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr.h.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_loader_negotiation.h.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_platform.h.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_reflection.h.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_reflection_parent_structs.h.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_reflection_structs.h.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\af1a29402f28e1178663df6f3f91fc09\generate_openxr_header.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\include\openxr\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate_openxr_header" />
+  </ItemGroup>
+  <ItemGroup>
+    <XML Include="C:\Users\logan\Desktop\workspace\specification\registry\xr.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{2D259981-862C-3FCA-959F-310A18914D20}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

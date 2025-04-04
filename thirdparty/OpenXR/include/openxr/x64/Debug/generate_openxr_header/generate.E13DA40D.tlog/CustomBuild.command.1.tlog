@@ -1,0 +1,78 @@
+^C:\USERS\LOGAN\DESKTOP\WORKSPACE\BUILD\WIN64\CMAKEFILES\A3DA6286CCFB3F9A0ED59CC19B77B705\OPENXR.H.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\LOGAN\DESKTOP\WORKSPACE\BUILD\WIN64\CMAKEFILES\A3DA6286CCFB3F9A0ED59CC19B77B705\OPENXR_LOADER_NEGOTIATION.H.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_loader_negotiation.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\LOGAN\DESKTOP\WORKSPACE\BUILD\WIN64\CMAKEFILES\A3DA6286CCFB3F9A0ED59CC19B77B705\OPENXR_PLATFORM.H.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_platform.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\LOGAN\DESKTOP\WORKSPACE\BUILD\WIN64\CMAKEFILES\A3DA6286CCFB3F9A0ED59CC19B77B705\OPENXR_REFLECTION.H.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\LOGAN\DESKTOP\WORKSPACE\BUILD\WIN64\CMAKEFILES\A3DA6286CCFB3F9A0ED59CC19B77B705\OPENXR_REFLECTION_PARENT_STRUCTS.H.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_parent_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\LOGAN\DESKTOP\WORKSPACE\BUILD\WIN64\CMAKEFILES\A3DA6286CCFB3F9A0ED59CC19B77B705\OPENXR_REFLECTION_STRUCTS.H.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\LOGAN\DESKTOP\WORKSPACE\BUILD\WIN64\CMAKEFILES\AF1A29402F28E1178663DF6F3F91FC09\GENERATE_OPENXR_HEADER.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\LOGAN\DESKTOP\WORKSPACE\INCLUDE\OPENXR\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/logan/Desktop/workspace -BC:/Users/logan/Desktop/workspace/build/win64 --check-stamp-file C:/Users/logan/Desktop/workspace/build/win64/include/openxr/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

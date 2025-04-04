@@ -1,8 +1,130 @@
-#include "Application/Application.h"
 #include <stdio.h>
+
+#include "Application/Application.h"
+#include <DebugOutput.h>
+#include <GraphicsAPI_OpenGL.h>
+#include <OpenXRDebugUtils.h>
+#include <memory>
+
+class OpenXR
+{
+public:
+	OpenXR(GraphicsAPI_Type apiType) : mAPIType(apiType)
+	{
+		printf("OpenXR Engine Starting..");
+	}
+	
+	~OpenXR() = default;
+	void Run() 
+	{
+		CreateInstance();
+		CreateDebugMessenger();
+
+		GetInstanceProperties();
+		GetSystemID();
+
+		DestroyDebugMessenger();
+		DestroyInstance();
+	}
+
+private:
+	void CreateInstance() 
+	{
+		XrApplicationInfo appInfo;
+		strncpy_s(appInfo.applicationName, "Glimmer", XR_MAX_APPLICATION_NAME_SIZE);
+		appInfo.applicationVersion = 1;
+		strncpy_s(appInfo.engineName, "Glimmer OpenXR Engine", XR_MAX_ENGINE_NAME_SIZE);
+		appInfo.engineVersion = 1;
+		appInfo.apiVersion = XR_CURRENT_API_VERSION;
+
+		mInstanceExtensions.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		mInstanceExtensions.push_back(GetGraphicsAPIInstanceExtensionString(mAPIType));
+
+		// Get all API layers from OpenXR runtime
+		uint32_t apiLayerCount = 0;
+		std::vector<XrApiLayerProperties> apiLayerProps;
+		OPENXR_CHECK(xrEnumerateApiLayerProperties(0, &apiLayerCount, nullptr), "Failed to enumerate ApiLayerProperties!");
+		apiLayerProps.resize(apiLayerCount, { XR_TYPE_API_LAYER_PROPERTIES });
+		OPENXR_CHECK(xrEnumerateApiLayerProperties(apiLayerCount, &apiLayerCount, apiLayerProps.data()), "Failed to enumerate ApiLayerProperties!");
+
+		// Check requested API layers against ones in OpenXR. Add found layers to active
+		for (auto& reqLayer : mAPILayers)
+		{
+			for (auto& layerProp : apiLayerProps)
+			{
+				if (strcmp(reqLayer.c_str(), layerProp.layerName) != 0)
+				{
+					continue;
+				}
+				else
+				{
+					// Found layer
+					mActiveAPILayers.push_back(reqLayer.c_str());
+					break;
+				}
+			}
+		}
+
+		// Get all instance extensions from OpenXR instance.
+		uint32_t extensionCount = 0;
+		std::vector<XrExtensionProperties> extensionProps;
+		OPENXR_CHECK(xrEnumerateInstanceExtensionProperties(nullptr, 0, &extensionCount, nullptr), "Failed to enumerate InstanceExtensionProperties!");
+		extensionProps.resize(extensionCount, { XR_TYPE_EXTENSION_PROPERTIES });
+		OPENXR_CHECK(xrEnumerateInstanceExtensionProperties(nullptr, extensionCount, &extensionCount, extensionProps.data()), "Failed to enumerate InstanceExtensionProperties!");
+
+		// Check the requested instance extensions against those from the OpenXR runtime
+		// Add found extensions to active
+		for (auto& requestedInstanceExt : mInstanceExtensions)
+		{
+			bool found = false;
+			for (auto& extProp : extensionProps)
+			{
+				if (strcmp(requestedInstanceExt.c_str(), extProp.extensionName) != 0)
+				{
+					continue;
+				}
+				else
+				{
+					mActiveInstanceExtensions.push_back(requestedInstanceExt.c_str());
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+			{
+				XR_TUT_LOG_ERROR("Failed to find OpenXR instance extension: " << requestedInstanceExt);
+			}
+		}
+	}
+	void DestroyInstance() {}
+	void CreateDebugMessenger() {}
+	void DestroyDebugMessenger() {}
+	void GetInstanceProperties() {}
+	void GetSystemID() {}
+	void PollSystemEvents() {}
+private:
+	XrInstance mXrInstance = {};
+	std::vector<const char*> mActiveAPILayers = {};
+	std::vector<const char*> mActiveInstanceExtensions = {};
+	std::vector<std::string> mAPILayers = {};
+	std::vector<std::string> mInstanceExtensions = {};
+
+	XrDebugUtilsMessengerEXT mDebugUtilsMessenger = {};
+
+	XrFormFactor mFormFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
+	XrSystemId mSystemID = {};
+	XrSystemProperties mSystemProperties = { XR_TYPE_SYSTEM_PROPERTIES };
+
+	GraphicsAPI_Type mAPIType = UNKNOWN;
+
+	bool mApplicationRunning = true;
+	bool mSessionRunning = false;
+};
 
 int main()
 {
+	OpenXR openXRAPP(OPENGL);
+	openXRAPP.Run();
 
 	Application application(1920, 1080, "Glimmer");
 	if (!application.Init())

@@ -10,12 +10,19 @@ IncludeDirs["GLFW"] = "thirdparty/GLFW/include"
 IncludeDirs["GLAD"] = "thirdparty/GLAD/include"
 IncludeDirs["STB"] = "thirdparty/stb"
 IncludeDirs["GLM"] = "thirdparty/glm"
+IncludeDirs["GL"] = "thirdparty/GL"
 IncludeDirs["FastGLTF"] = "thirdparty/fastgltf"
 IncludeDirs["simdJSON"] = "thirdparty/simdjson"
 IncludeDirs["imGUI"] = "thirdparty/imgui"
+IncludeDirs["OpenXR"] = "thirdparty/OpenXR/include"
+IncludeDirs["OpenXRCommon"] = "thirdparty/OpenXR/include/Common"
+IncludeDirs["OpenXRLoader"] = "thirdparty/OpenXR/include/loader"
+
 
 LibraryDirs = {}
 LibraryDirs["GLFW"] = "thirdparty/GLFW/lib-vc2022"
+LibraryDirs["OpenXR"] = "thirdparty/OpenXR/include/lib"
+LibraryDirs["OpenXRLoader"] = "thirdparty/OpenXR/include/loader"
  
 project "Glimmer"
     location "src"
@@ -41,7 +48,8 @@ project "Glimmer"
         "thirdparty/simdjson/**.cpp",
         "thirdparty/simdjson/**.c",
         "thirdparty/stb.cpp",
-        "thirdparty/glad.c"
+        "thirdparty/glad.c",
+        "thirdparty/OpenXR/include/Common/**"
     }
 
     vpaths
@@ -66,19 +74,26 @@ project "Glimmer"
         "%{IncludeDirs.GLAD}",
         "%{IncludeDirs.STB}",
         "%{IncludeDirs.GLM}",
+        "%{IncludeDirs.GL}",
         "%{IncludeDirs.FastGLTF}",
         "%{IncludeDirs.simdJSON}",
-        "%{IncludeDirs.imGUI}"
+        "%{IncludeDirs.imGUI}",
+        "%{IncludeDirs.OpenXR}",
+        "%{IncludeDirs.OpenXRCommon}"
     }
 
     libdirs
     {
-        "%{LibraryDirs.GLFW}"
+        "%{LibraryDirs.GLFW}",
+        "%{LibraryDirs.OpenXR}",
+        "%{LibraryDirs.OpenXRLoader}"
     }
 
     links
     {
-        "glfw3.lib"
+        "glfw3.lib",
+        "openxr-gfxwrapper.lib",
+        "openxr_loaderd.lib"
     }
 
     filter "system:windows"

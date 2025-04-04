@@ -1,0 +1,570 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E13DA40D-3E1A-3626-9F22-4E7455FFE74D}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>generate_openxr_header</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr.h.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_loader_negotiation.h.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_loader_negotiation.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_loader_negotiation.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_loader_negotiation.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_loader_negotiation.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_loader_negotiation.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_loader_negotiation.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_loader_negotiation.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_loader_negotiation.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_loader_negotiation.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_loader_negotiation.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_loader_negotiation.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_loader_negotiation.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_platform.h.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_platform.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_platform.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_platform.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_platform.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_platform.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_platform.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_platform.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_platform.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_platform.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_platform.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_platform.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_platform.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_reflection.h.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_reflection_parent_structs.h.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_parent_structs.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_parent_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_parent_structs.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_parent_structs.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_parent_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_parent_structs.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_parent_structs.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_parent_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_parent_structs.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_parent_structs.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_parent_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_parent_structs.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\a3da6286ccfb3f9a0ed59cc19b77b705\openxr_reflection_structs.h.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_structs.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_structs.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_structs.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_structs.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_structs.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_structs.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Generating C:/Users/logan/Desktop/workspace/build/win64/include/openxr/openxr_reflection_structs.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E env "PYTHONPATH=C:/Users/logan/Desktop/workspace/specification/scripts";"C:/Users/logan/Desktop/workspace/src/scripts";"" C:/Python312/python.exe C:/Users/logan/Desktop/workspace/specification/scripts/genxr.py -registry C:/Users/logan/Desktop/workspace/specification/registry/xr.xml -o C:/Users/logan/Desktop/workspace/build/win64/include/openxr openxr_reflection_structs.h
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\specification\scripts\genxr.py;C:\Users\logan\Desktop\workspace\specification\scripts\cgenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\creflectiongenerator.py;C:\Users\logan\Desktop\workspace\specification\scripts\generator.py;C:\Users\logan\Desktop\workspace\specification\scripts\reg.py;C:\Users\logan\Desktop\workspace\specification\registry\xr.xml;C:\Users\logan\Desktop\workspace\specification\scripts\jinja_helpers.py;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_parent_structs.h;C:\Users\logan\Desktop\workspace\specification\scripts\template_openxr_reflection_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_structs.h</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\af1a29402f28e1178663df6f3f91fc09\generate_openxr_header.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_loader_negotiation.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_platform.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_structs.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_parent_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate_openxr_header</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <VerifyInputsAndOutputsExist Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</VerifyInputsAndOutputsExist>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_loader_negotiation.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_platform.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_structs.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_parent_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate_openxr_header</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <VerifyInputsAndOutputsExist Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</VerifyInputsAndOutputsExist>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_loader_negotiation.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_platform.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_structs.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_parent_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate_openxr_header</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <VerifyInputsAndOutputsExist Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</VerifyInputsAndOutputsExist>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_loader_negotiation.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_platform.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_structs.h;C:\Users\logan\Desktop\workspace\build\win64\include\openxr\openxr_reflection_parent_structs.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate_openxr_header</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+      <VerifyInputsAndOutputsExist Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</VerifyInputsAndOutputsExist>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\logan\Desktop\workspace\include\openxr\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/logan/Desktop/workspace/include/openxr/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/logan/Desktop/workspace -BC:/Users/logan/Desktop/workspace/build/win64 --check-stamp-file C:/Users/logan/Desktop/workspace/build/win64/include/openxr/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\cmake.verify_globs;C:\Users\logan\Desktop\workspace\include\openxr\openxr_platform_defines.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/logan/Desktop/workspace/include/openxr/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/logan/Desktop/workspace -BC:/Users/logan/Desktop/workspace/build/win64 --check-stamp-file C:/Users/logan/Desktop/workspace/build/win64/include/openxr/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\cmake.verify_globs;C:\Users\logan\Desktop\workspace\include\openxr\openxr_platform_defines.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/logan/Desktop/workspace/include/openxr/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/logan/Desktop/workspace -BC:/Users/logan/Desktop/workspace/build/win64 --check-stamp-file C:/Users/logan/Desktop/workspace/build/win64/include/openxr/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\cmake.verify_globs;C:\Users\logan\Desktop\workspace\include\openxr\openxr_platform_defines.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/logan/Desktop/workspace/include/openxr/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/logan/Desktop/workspace -BC:/Users/logan/Desktop/workspace/build/win64 --check-stamp-file C:/Users/logan/Desktop/workspace/build/win64/include/openxr/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\CMakeFiles\cmake.verify_globs;C:\Users\logan\Desktop\workspace\include\openxr\openxr_platform_defines.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <XML Include="C:\Users\logan\Desktop\workspace\specification\registry\xr.xml">
+    </XML>
+    <None Include="C:\Users\logan\Desktop\workspace\build\win64\include\openxr\CMakeFiles\generate_openxr_header">
+    </None>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\logan\Desktop\workspace\build\win64\ZERO_CHECK.vcxproj">
+      <Project>{73E76E96-A1B9-3002-89CD-41F3A87E5EAB}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
