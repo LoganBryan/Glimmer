@@ -1,3 +1,21 @@
+#include "Application/Application.h"
+#include <stdio.h>
+
+int main()
+{
+
+	Application application(1920, 1080, "Glimmer");
+	if (!application.Init())
+	{
+		printf("Application failed to initialize!");
+		return -1;
+	}
+	application.Run();
+
+	return 0;
+}
+
+// TODO: everything here needs to be re-implemented (currently just missing callbacks)
 //#define TINYGLTF_IMPLEMENTATION
 //
 //#include <stdio.h>
@@ -781,21 +799,3 @@
 //	std::cerr << "OGL Debug\n";
 //	printf("Source: 0x%x | Type: 0x%x | ID: %u\n Severity: 0x%x\n%s\n\n", source, type, id, severity, message);
 //}
-
-
-#include "Application.h"
-#include <stdio.h>
-
-int main()
-{
-
-	Application application(1920, 1080, "Glimmer");
-	if (!application.Init())
-	{
-		printf("Application failed to initialize!");
-		return -1;
-	}
-	application.Run();
-
-	return 0;
-}

@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#include "GeometryData.h"
+#include "Model/GeometryData.h"
 #include "GUIHandler.h"
 #include "Utils.h"
 #include "Camera.h"
