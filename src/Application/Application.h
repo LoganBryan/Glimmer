@@ -14,6 +14,8 @@ public:
 	// Window, Context, ImGui etc..
 	bool Init();
 
+	inline GLFWwindow* GetWindow() { return window; }
+
 	void Run();
 private:
 	void ProcessInput();

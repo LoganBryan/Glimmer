@@ -1,17 +1,79 @@
+#define XR_USE_PLATFORM_WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <unknwn.h>
+
+#include <openxr/openxr.h>
+#include <openxr/openxr_platform.h>
+
 #include <stdio.h>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <memory>
+#include <stdexcept>
 
 #include "Application/Application.h"
-#include <DebugOutput.h>
-#include <GraphicsAPI_OpenGL.h>
 #include <OpenXRDebugUtils.h>
-#include <memory>
+#include <DebugOutput.h>
+
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+
+HWND _hwnd;
+HDC _hdc;
+HGLRC _glrc;
+
+enum GraphicsAPI_Type : uint8_t {
+	UNKNOWN,
+	D3D11,
+	D3D12,
+	OPENGL,
+	OPENGL_ES,
+	VULKAN
+};
+
+// TODO: move these graphics functions to their own class/ file (same with the openxr class)
+const char* GetGraphicsAPIInstanceExtensionString(GraphicsAPI_Type type) {
+#if defined(XR_USE_GRAPHICS_API_D3D11)
+	if (type == D3D11) {
+		return XR_KHR_D3D11_ENABLE_EXTENSION_NAME;
+	}
+#endif
+#if defined(XR_USE_GRAPHICS_API_D3D12)
+	if (type == D3D12) {
+		return XR_KHR_D3D12_ENABLE_EXTENSION_NAME;
+	}
+#endif
+#if defined(XR_USE_GRAPHICS_API_OPENGL)
+	if (type == OPENGL) {
+		return XR_KHR_OPENGL_ENABLE_EXTENSION_NAME;
+	}
+#endif
+#if defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+	if (type == OPENGL_ES) {
+		return XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME;
+	}
+#endif
+#if defined(XR_USE_GRAPHICS_API_VULKAN)
+	if (type == VULKAN) {
+		return XR_KHR_VULKAN_ENABLE_EXTENSION_NAME;
+	}
+#endif
+	std::cerr << "ERROR: Unknown Graphics API." << std::endl;
+	DEBUG_BREAK;
+	return nullptr;
+}
 
 class OpenXR
 {
 public:
-	OpenXR(GraphicsAPI_Type apiType) : mAPIType(apiType)
+	OpenXR(GraphicsAPI_Type apiType)
 	{
-		printf("OpenXR Engine Starting..");
+		printf("OpenXR Engine Starting..\n");
 	}
 	
 	~OpenXR() = default;
@@ -23,6 +85,20 @@ public:
 		GetInstanceProperties();
 		GetSystemID();
 
+		CreateSession();
+
+		while (mApplicationRunning)
+		{
+			PollSystemEvents();
+			PollEvents();
+
+			if (mSessionRunning)
+			{
+				// Rendering
+			}
+		}
+
+		DestroySession();
 		DestroyDebugMessenger();
 		DestroyInstance();
 	}
@@ -30,15 +106,15 @@ public:
 private:
 	void CreateInstance() 
 	{
-		XrApplicationInfo appInfo;
+		XrApplicationInfo appInfo = {};
 		strncpy_s(appInfo.applicationName, "Glimmer", XR_MAX_APPLICATION_NAME_SIZE);
 		appInfo.applicationVersion = 1;
 		strncpy_s(appInfo.engineName, "Glimmer OpenXR Engine", XR_MAX_ENGINE_NAME_SIZE);
 		appInfo.engineVersion = 1;
-		appInfo.apiVersion = XR_CURRENT_API_VERSION;
+		appInfo.apiVersion = XR_API_VERSION_1_0;
 
 		mInstanceExtensions.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
-		mInstanceExtensions.push_back(GetGraphicsAPIInstanceExtensionString(mAPIType));
+		mInstanceExtensions.push_back("XR_KHR_opengl_enable");
 
 		// Get all API layers from OpenXR runtime
 		uint32_t apiLayerCount = 0;
@@ -48,22 +124,22 @@ private:
 		OPENXR_CHECK(xrEnumerateApiLayerProperties(apiLayerCount, &apiLayerCount, apiLayerProps.data()), "Failed to enumerate ApiLayerProperties!");
 
 		// Check requested API layers against ones in OpenXR. Add found layers to active
-		for (auto& reqLayer : mAPILayers)
-		{
-			for (auto& layerProp : apiLayerProps)
-			{
-				if (strcmp(reqLayer.c_str(), layerProp.layerName) != 0)
-				{
-					continue;
-				}
-				else
-				{
-					// Found layer
-					mActiveAPILayers.push_back(reqLayer.c_str());
-					break;
-				}
-			}
-		}
+		//for (auto& reqLayer : mAPILayers)
+		//{
+		//	for (auto& layerProp : apiLayerProps)
+		//	{
+		//		if (strcmp(reqLayer.c_str(), layerProp.layerName) != 0)
+		//		{
+		//			continue;
+		//		}
+		//		else
+		//		{
+		//			// Found layer
+		//			mActiveAPILayers.push_back(reqLayer.c_str());
+		//			break;
+		//		}
+		//	}
+		//}
 
 		// Get all instance extensions from OpenXR instance.
 		uint32_t extensionCount = 0;
@@ -95,18 +171,204 @@ private:
 				XR_TUT_LOG_ERROR("Failed to find OpenXR instance extension: " << requestedInstanceExt);
 			}
 		}
+
+		XrInstanceCreateInfo instanceCI{ XR_TYPE_INSTANCE_CREATE_INFO };
+		instanceCI.createFlags = 0;
+		instanceCI.applicationInfo = appInfo;
+		instanceCI.enabledApiLayerCount = 0;
+		//instanceCI.enabledApiLayerNames = mActiveAPILayers.data();
+		instanceCI.enabledExtensionCount = static_cast<uint32_t>(mActiveInstanceExtensions.size());
+		instanceCI.enabledExtensionNames = mActiveInstanceExtensions.data();
+		OPENXR_CHECK(xrCreateInstance(&instanceCI, &mXrInstance), "Failed to create instance!");
 	}
-	void DestroyInstance() {}
-	void CreateDebugMessenger() {}
-	void DestroyDebugMessenger() {}
-	void GetInstanceProperties() {}
-	void GetSystemID() {}
+
+	void DestroyInstance() 
+	{
+		OPENXR_CHECK(xrDestroyInstance(mXrInstance), "Failed to destroy instance!");
+	}
+
+	void GetInstanceProperties()
+	{
+		XrInstanceProperties instanceProperties{ XR_TYPE_INSTANCE_PROPERTIES };
+		OPENXR_CHECK(xrGetInstanceProperties(mXrInstance, &instanceProperties), "Failed to get InstanceProperties!");
+
+		XR_TUT_LOG("OpenXR Runtime: " << instanceProperties.runtimeName << " - " << XR_VERSION_MAJOR(instanceProperties.runtimeVersion) << "." << XR_VERSION_MINOR(instanceProperties.runtimeVersion) << "." << XR_VERSION_PATCH(instanceProperties.runtimeVersion));
+	}
+
+	void GetSystemID()
+	{
+		// Get XrSystemId from instance and supplied XrFormFactor
+		XrSystemGetInfo systemGI{ XR_TYPE_SYSTEM_GET_INFO };
+		systemGI.formFactor = mFormFactor;
+		OPENXR_CHECK(xrGetSystem(mXrInstance, &systemGI, &mSystemID), "Failed to get SystemID!");
+
+		// Get system properties for general hardware and vendor info
+		OPENXR_CHECK(xrGetSystemProperties(mXrInstance, mSystemID, &mSystemProperties), "Failed to get SystemProperties!");
+	}
+
+	void CreateDebugMessenger() 
+	{
+		// Check 'XR_EXT_debug_utils' is in active instance extensions before creating debug messenger
+		if (IsStringInVector(mActiveInstanceExtensions, XR_EXT_DEBUG_UTILS_EXTENSION_NAME))
+			mDebugUtilsMessenger = CreateOpenXRDebugUtilsMessenger(mXrInstance); 
+	}
+
+	void DestroyDebugMessenger()
+	{
+		// Check 'XR_EXT_debug_utils' is in active instance extensions before destroying debug messenger
+		if (mDebugUtilsMessenger != XR_NULL_HANDLE)
+			DestroyOpenXRDebugUtilsMessenger(mXrInstance, mDebugUtilsMessenger);
+	}
+
+	void CreateSession() 
+	{
+#ifdef _WIN32
+		PFN_xrGetOpenGLGraphicsRequirementsKHR pfnGetOpenGLGraphicsRequirementsKHR = nullptr;
+		OPENXR_CHECK(xrGetInstanceProcAddr(mXrInstance, "xrGetOpenGLGraphicsRequirementsKHR", reinterpret_cast<PFN_xrVoidFunction*>(&pfnGetOpenGLGraphicsRequirementsKHR)), "Failed to get OpenGL graphics requirements function pointer!");
+
+		XrGraphicsRequirementsOpenGLKHR glRequirements{ XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR };
+		OPENXR_CHECK(pfnGetOpenGLGraphicsRequirementsKHR(mXrInstance, mSystemID, &glRequirements), "Failed to get OpenGL graphics requirements!");
+
+		printf("OpenGL min version supported: %d.%d.%d\n",
+			XR_VERSION_MAJOR(glRequirements.minApiVersionSupported),
+			XR_VERSION_MINOR(glRequirements.minApiVersionSupported),
+			XR_VERSION_PATCH(glRequirements.minApiVersionSupported));
+
+		const char* currentOGLVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
+		printf("Current OpenGL version: %s\n", currentOGLVersion);
+
+		// TODO: could verify current context meets requirements
+
+		XrGraphicsBindingOpenGLWin32KHR graphicsBinding{ XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR };
+		graphicsBinding.hDC = _hdc;
+		graphicsBinding.hGLRC = _glrc;
+
+		XrSessionCreateInfo sessionCI{ XR_TYPE_SESSION_CREATE_INFO };
+		sessionCI.next = &graphicsBinding;
+		sessionCI.systemId = mSystemID;
+		OPENXR_CHECK(xrCreateSession(mXrInstance, &sessionCI, &mSession), "Failed to create session!");
+#else
+		throw std:runtime_error("Session created without graphics binding!");
+#endif // _WIN32
+	}
+
+	void DestroySession() 
+	{
+		if (mSession != XR_NULL_HANDLE)
+			OPENXR_CHECK(xrDestroySession(mSession), "Failed to destroy session!");
+	}
+
 	void PollSystemEvents() {}
+	void PollEvents() 
+	{
+		// Poll OpenXR for a new event
+		XrEventDataBuffer eventData{ XR_TYPE_EVENT_DATA_BUFFER };
+		auto XrPollEvents = [&]() -> bool
+			{
+				eventData = { XR_TYPE_EVENT_DATA_BUFFER };
+				return xrPollEvent(mXrInstance, &eventData) == XR_SUCCESS;
+			};
+
+		while (XrPollEvents())
+		{
+			switch (eventData.type)
+			{
+			// Log number of lost events from runtime
+			case XR_TYPE_EVENT_DATA_EVENTS_LOST: 
+			{
+				XrEventDataEventsLost* eventsLost = reinterpret_cast<XrEventDataEventsLost*>(&eventData);
+				XR_TUT_LOG("OPENXR: Events Lost: " << eventsLost->lostEventCount);
+				break;
+			}
+			// Log a pending instance loss and shutdown application
+			case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING:
+			{
+				XrEventDataInstanceLossPending* instanceLossPending = reinterpret_cast<XrEventDataInstanceLossPending*>(&eventData);
+				XR_TUT_LOG("OPENXR: Instance Loss Pending at: " << instanceLossPending->lossTime);
+				mSessionRunning = false;
+				mApplicationRunning = false;
+				break;
+			}
+			// Log that the interaction profile has changed
+			case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED:
+			{
+				XrEventDataInteractionProfileChanged* interactionProfileChanged = reinterpret_cast<XrEventDataInteractionProfileChanged*>(&eventData);
+				XR_TUT_LOG("OPENXR: Interaction Profile changed for session: " << interactionProfileChanged->session);
+				if (interactionProfileChanged->session != mSession)
+				{
+					XR_TUT_LOG("XrEventDataInteractionProfileCHanged for an unknown session!");
+					break;
+				}
+				break;
+			}
+			// Log that there's a reference space change pending
+			case XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING:
+			{
+				XrEventDataReferenceSpaceChangePending* referenceSpaceChangePending = reinterpret_cast<XrEventDataReferenceSpaceChangePending*>(&eventData);
+				XR_TUT_LOG("OPENXR: Reference Space Change pending for session: " << referenceSpaceChangePending->session);
+				if (referenceSpaceChangePending->session != mSession)
+				{
+					XR_TUT_LOG("XrEventDataReferenceSpaceChangePending for unknown session!");
+					break;
+				}
+				break;
+			}
+			// Session state changes
+			case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
+			{
+				XrEventDataSessionStateChanged* sessionStateChanged = reinterpret_cast<XrEventDataSessionStateChanged*>(&eventData);
+				if (sessionStateChanged->session != mSession)
+				{
+					XR_TUT_LOG("XrEventDataSessionStateChanged for unknown session!");
+					break;
+				}
+
+				if (sessionStateChanged->state == XR_SESSION_STATE_READY)
+				{
+					// SessionState is ready. Begin using XrViewConfigurationType
+					XrSessionBeginInfo sessionBeginInfo{ XR_TYPE_SESSION_BEGIN_INFO };
+					sessionBeginInfo.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+					OPENXR_CHECK(xrBeginSession(mSession, &sessionBeginInfo), "Failed to begin session!");
+					printf("OpenXR Session is running!\n");
+					mSessionRunning = true;
+				}
+				if (sessionStateChanged->state == XR_SESSION_STATE_STOPPING)
+				{
+					// Stopping. End XrSession
+					OPENXR_CHECK(xrEndSession(mSession), "Failed to end session!");
+					printf("OpenXR Session is stopping..\n");
+					mSessionRunning = false;
+				}
+				if (sessionStateChanged->state == XR_SESSION_STATE_EXITING)
+				{
+					// Exit application
+					printf("OpenXR Engine is exiting..\n");
+					mSessionRunning = false;
+					mApplicationRunning = false;
+				}
+				if (sessionStateChanged->state == XR_SESSION_STATE_LOSS_PENDING)
+				{
+					// SessionState is loss pending. Exit application - XrInstance and XrSession can be reestablished, for now exiting is simpler
+					printf("OpenXR Engine is loss pending!\n");
+					mSessionRunning = false;
+					mApplicationRunning = false;
+				}
+				mSessionState = sessionStateChanged->state;
+				break;
+			}
+			default:
+			{
+				break;
+			}
+			}
+		}
+	}
+
 private:
 	XrInstance mXrInstance = {};
-	std::vector<const char*> mActiveAPILayers = {};
+	//std::vector<const char*> mActiveAPILayers = {};
 	std::vector<const char*> mActiveInstanceExtensions = {};
-	std::vector<std::string> mAPILayers = {};
+	//std::vector<std::string> mAPILayers = {};
 	std::vector<std::string> mInstanceExtensions = {};
 
 	XrDebugUtilsMessengerEXT mDebugUtilsMessenger = {};
@@ -115,7 +377,11 @@ private:
 	XrSystemId mSystemID = {};
 	XrSystemProperties mSystemProperties = { XR_TYPE_SYSTEM_PROPERTIES };
 
-	GraphicsAPI_Type mAPIType = UNKNOWN;
+	//GraphicsAPI_Type mAPIType = UNKNOWN;
+	//std::unique_ptr<GraphicsAPI> mGraphicsAPI = nullptr;
+
+	XrSession mSession = XR_NULL_HANDLE;
+	XrSessionState mSessionState = XR_SESSION_STATE_UNKNOWN;
 
 	bool mApplicationRunning = true;
 	bool mSessionRunning = false;
@@ -123,15 +389,19 @@ private:
 
 int main()
 {
-	OpenXR openXRAPP(OPENGL);
-	openXRAPP.Run();
-
 	Application application(1920, 1080, "Glimmer");
 	if (!application.Init())
 	{
 		printf("Application failed to initialize!");
 		return -1;
 	}
+	_hwnd = glfwGetWin32Window(application.GetWindow());
+	_hdc = GetDC(_hwnd);
+	_glrc = glfwGetWGLContext(application.GetWindow());
+
+	OpenXR openXRAPP(OPENGL);
+	openXRAPP.Run();
+
 	application.Run();
 
 	return 0;

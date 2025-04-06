@@ -101,7 +101,8 @@ project "Glimmer"
         buildoptions {"/MP"}
         defines
         {
-            "GLIMMER_PLATFORM_WINDOWS"
+            "GLIMMER_PLATFORM_WINDOWS",
+            "XR_USE_GRAPHICS_API_OPENGL"
         }
     
     filter "configurations:Debug"
