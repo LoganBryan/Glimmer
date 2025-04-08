@@ -54,10 +54,6 @@ project "Glimmer"
 
     vpaths
     {
-        ["Headers/Application"] = {"src/Application/**.h"},
-        ["Headers/Model"] = {"src/Model/**.h"},
-        ["Sources/Application"] = {"src/Application/**.cpp"},
-        ["Sources/Model"] = {"src/Model/**.cpp"},
         ["Shaders"] = {"src/shaders/**"},
         ["FastGLTF"] = {"src/fastgltf/**"},
         ["simdJSON"] = {"src/simdjson/**"}, 
@@ -93,7 +89,8 @@ project "Glimmer"
     {
         "glfw3.lib",
         "openxr-gfxwrapper.lib",
-        "openxr_loaderd.lib"
+        "openxr_loaderd.lib",
+        "opengl32.lib"
     }
 
     filter "system:windows"

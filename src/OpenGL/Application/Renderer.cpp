@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#include "Model/GeometryData.h"
+#include "OpenGL/Model/GeometryData.h"
 #include "GUIHandler.h"
 #include "Utils.h"
 #include "Camera.h"
@@ -34,6 +34,7 @@ void Renderer::Init()
 	// Init shaders, load models, setup buffers etc
 	skyboxShader.Load("shaders/skybox.vert", "shaders/skybox.frag");
 	mainShader.Load("shaders/shader.vert", "shaders/shader.frag");
+	//mainShader.Load("shaders/xrShader.vert", "shaders/xrShader.frag");
 
 	// Load skybox textures
 	skyboxTexture = Utils::GenerateCubemap(skyboxFaces);
@@ -58,7 +59,6 @@ void Renderer::Init()
 	skyboxShader.SetInt("skybox", 0);
 
 	gltfObject.LoadModel(gltfFile, mainShader);
-
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -119,4 +119,59 @@ void Renderer::Render(float width, float height)
 	gui->EndFrame();
 
 	gui->Render();
+}
+
+void Renderer::RenderEye(glm::mat4& view, glm::mat4& projection, GLuint framebuffer, int width, int height)
+{
+	if (framebuffer == 0)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if (status != GL_FRAMEBUFFER_COMPLETE)
+		{
+			// Handle context loss
+			glfwMakeContextCurrent(window);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+	}
+	else
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	}
+
+	glViewport(0, 0, width, height);
+
+	glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	mainShader.Use();
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0xFF);
+
+	mainShader.SetMatrix4("projection", projection);
+	mainShader.SetMatrix4("view", view);
+
+	// Render object(s)
+	glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
+	mainShader.SetMatrix4("model", model);
+	gltfObject.DrawModel();
+
+	// Render skybox
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_LEQUAL);
+	skyboxShader.Use();
+	glm::mat4 skyboxView = glm::mat4(glm::mat3(view));
+	skyboxShader.SetMatrix4("view", skyboxView);
+	skyboxShader.SetMatrix4("projection", projection);
+
+	// Draw skybox cube
+	glBindVertexArray(skyboxVAO);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+
+	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
 }

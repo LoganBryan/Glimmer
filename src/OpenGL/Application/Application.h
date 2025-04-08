@@ -4,6 +4,8 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <memory>
+#include "Renderer.h"
 
 class Application
 {
@@ -32,6 +34,8 @@ private:
 	GLFWwindow* window;
 	int width, height;
 	const char* title;
+
+	std::unique_ptr<Renderer> mRenderer;
 
 	float lastFrame;
 	float deltaTime;

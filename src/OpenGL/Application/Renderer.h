@@ -15,7 +15,7 @@
 #include <string>
 
 #include "Shader.h"
-#include "Model/GltfLoader.h"
+#include "OpenGL/Model/GltfLoader.h"
 
 class Renderer
 {
@@ -25,6 +25,7 @@ public:
 
 	void Init();
 	void Render(float width, float height);
+	void RenderEye(glm::mat4& view, glm::mat4& projection, GLuint framebuffer, int width, int height);
 
 private:
 	GLFWwindow* window;

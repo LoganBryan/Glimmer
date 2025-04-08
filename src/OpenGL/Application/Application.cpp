@@ -1,5 +1,4 @@
 #include "Application.h"
-#include "Renderer.h"
 #include "Camera.h"
 #include "GUIHandler.h"
 #include <stdio.h>
@@ -45,9 +44,6 @@ bool Application::Init()
 
 	std::cout << glGetString(GL_RENDERER) << "\n" << glGetString(GL_VERSION) << std::endl;
 
-	//TODO: setup here (callbacks, imgui context etc)
-
-
 	return true;
 }
 
@@ -68,19 +64,6 @@ void Application::SetupCallbacks()
 
 void Application::Run()
 {
-	Renderer renderer(window);
-	renderer.Init();
 
-	while (!glfwWindowShouldClose(window))
-	{
-		CalculateDelta();
-		renderer.Render(width, height);
-
-		Camera::Camera::GetInstance()->ProcessKeyboard(window, deltaTime);
-
-		glfwSwapInterval(0);
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
 }
 

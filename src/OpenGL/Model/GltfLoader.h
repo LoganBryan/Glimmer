@@ -16,7 +16,7 @@
 #include <fastgltf/tools.hpp>
 
 #include "GltfLoaderData.h"
-#include "Application/Shader.h"
+#include "OpenGL/Application/Shader.h"
 
 class GltfLoader
 {
