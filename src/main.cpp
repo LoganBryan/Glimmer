@@ -11,7 +11,7 @@ int main()
 	}
 
 	OpenXRManager_OpenGL xrApplication(application.GetWindow());
-	if (!xrApplication.Init())
+	if (!xrApplication.Init({"Glimmer", "Glimmer XR Engine", 1, 1}))
 	{
 		printf("XR Application failed to initialize!");
 	}

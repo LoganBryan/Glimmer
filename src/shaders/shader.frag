@@ -15,12 +15,18 @@ uniform vec2 uvScale;
 uniform float uvRotation;
 
 const uint HAS_BASE_COLOR = 1;
+const uint HAS_METALLIC_ROUGHNESS = 2;
+const uint HAS_NORMAL_MAP = 4;
+const uint HAS_EMISSIVE = 8;
+const uint HAS_OCCLUSION = 16;
 
 layout(location = 0) uniform sampler2D albedoTexture;
 layout(binding = 0, std140) uniform MaterialUniforms {
 	vec4 baseColorFactor;
-	float alphaCutoff;
-	uint flags;
+    float alphaCutoff;
+    float metallicFactor;
+    float roughnessFactor;
+    uint flags;
 } material;
 
 layout(location = 1) uniform sampler2D metallicRoughnessTexture;
@@ -55,17 +61,30 @@ void main()
 		discard;
 
 	// Normal map transform
-	vec3 tangentNormal = texture(normalTexture, transformUV(texCoord)).rgb * 2.0 - 1.0;
+	vec3 tangentNormal = vec3(0.0, 0.0, 1.0); // Default to no normal mapping
+    if ((material.flags & HAS_NORMAL_MAP) == HAS_NORMAL_MAP) {
+        tangentNormal = texture(normalTexture, transformUV(texCoord)).rgb * 2.0 - 1.0;
+    }
 	vec3 viewNormal = normalize(TBN * tangentNormal);
 
 	// Metallic-Roughness map
-	vec2 metallicRoughness = texture(metallicRoughnessTexture, transformUV(texCoord)).gb;
-	float ambientOcclusion = texture(occlusionTexture, transformUV(texCoord)).r;
+	vec2 metallicRoughness = vec2(material.roughnessFactor, material.metallicFactor);
+	if ((material.flags & HAS_METALLIC_ROUGHNESS) == HAS_METALLIC_ROUGHNESS) {
+		metallicRoughness = texture(metallicRoughnessTexture, transformUV(texCoord)).gb;
+	} 
 	float roughness = clamp(metallicRoughness.x, 0.05, 1.0);
 	float metallic = clamp(metallicRoughness.r, 0.0, 1.0);
 
 	// Emissive map
-	vec4 emissiveColor = texture(emissiveTexture, transformUV(texCoord));
+	vec4 emissiveColor = vec4(0.0);
+	if ((material.flags & HAS_EMISSIVE) == HAS_EMISSIVE) {
+		emissiveColor = texture(emissiveTexture, transformUV(texCoord));
+	}
+
+	float ambientOcclusion = 1.0;
+	if ((material.flags & HAS_OCCLUSION) == HAS_OCCLUSION) {
+		ambientOcclusion = texture(occlusionTexture, transformUV(texCoord)).r;
+	}
 
 	// Light and view vectors 
 	vec3 H = normalize(L + V); // Halfway vector

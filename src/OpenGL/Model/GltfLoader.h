@@ -27,8 +27,10 @@ public:
 	bool LoadModel(std::filesystem::path filePath, Shader& shader);
 	void DrawModel();
 
+	inline Transform& GetTransform() { return transform; }
 private:
 	Viewer viewer;
+	Transform transform;
 
 	bool LoadFromPath(std::filesystem::path filePath);
 	bool LoadMeshData(fastgltf::Mesh& mesh);

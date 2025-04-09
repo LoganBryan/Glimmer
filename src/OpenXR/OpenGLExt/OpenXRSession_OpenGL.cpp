@@ -88,6 +88,7 @@ void XRSession_OpenGL::PollEvents()
 		{
 			XrEventDataInteractionProfileChanged* interactionProfileChanged = reinterpret_cast<XrEventDataInteractionProfileChanged*>(&eventData);
 			std::cout << "OPENXR: Interaction Profile changed for session: " << interactionProfileChanged->session << std::endl;
+			RecordCurrentBindings();
 			if (interactionProfileChanged->session != mSession)
 			{
 				printf("XrEventDataInteractionProfileCHanged for an unknown session!");
@@ -156,20 +157,6 @@ void XRSession_OpenGL::PollEvents()
 		}
 		}
 	}
-}
-
-void XRSession_OpenGL::CreateReferenceSpace()
-{
-	// Create reference XrSpace, specifying a local space with identity pose for origin.
-	XrReferenceSpaceCreateInfo referenceSpaceCI{ XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
-	referenceSpaceCI.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-	referenceSpaceCI.poseInReferenceSpace = { {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f} };
-	xrCreateReferenceSpace(mSession, &referenceSpaceCI, &mLocalSpace);
-}
-
-void XRSession_OpenGL::DestroyReferenceSpace()
-{
-	xrDestroySpace(mLocalSpace);
 }
 
 bool XRSession_OpenGL::RenderLayer(RenderLayerInfo& renderlayerInfo)
@@ -266,6 +253,7 @@ bool XRSession_OpenGL::RenderLayer(RenderLayerInfo& renderlayerInfo)
 		glm::mat4 viewMatrix = XrPoseToGLMMatrix(views[i].pose);
 		glm::mat4 projMatrix = CreateProjectionMatrix(views[i].fov, 0.1f, 100.0f);
 		mRenderer->RenderEye(viewMatrix, projMatrix, fbo, width, height);
+		mRenderer->RenderHands(std::array<XrPosef, 2>{ mHandPose[0], mHandPose[1] }, std::array<XrActionStatePose, 2>{ mHandPoseState[0], mHandPoseState[1] });
 
 		//mRenderer->RenderFrame(width, height);
 
@@ -304,6 +292,7 @@ void XRSession_OpenGL::RenderDesktopWindow()
 	glm::mat4 proj = glm::perspective(glm::radians(60.0f), windowAspect, 0.1f, 100.0f);
 
 	mRenderer->RenderEye(view, proj, 0, windowWidth, windowHeight);
+	mRenderer->RenderHands(std::array<XrPosef, 2>{ mHandPose[0], mHandPose[1] }, std::array<XrActionStatePose, 2>{ mHandPoseState[0], mHandPoseState[1] });
 
 	SwapBuffers(m_hdc);
 }
@@ -327,6 +316,8 @@ void XRSession_OpenGL::RenderFrame()
 	bool sessionActive = { mSessionState == XR_SESSION_STATE_SYNCHRONIZED || mSessionState == XR_SESSION_STATE_VISIBLE || mSessionState == XR_SESSION_STATE_FOCUSED };
 	if (sessionActive && frameState.shouldRender)
 	{
+		PollActions(frameState.predictedDisplayTime);
+		ObjectInteraction();
 		rendered = RenderLayer(renderLayerInfo);
 		if (rendered)
 			renderLayerInfo.layers.push_back(reinterpret_cast<XrCompositionLayerBaseHeader*>(&renderLayerInfo.layerProjection));
@@ -339,4 +330,220 @@ void XRSession_OpenGL::RenderFrame()
 	frameEndInfo.layerCount = static_cast<uint32_t>(renderLayerInfo.layers.size());
 	frameEndInfo.layers = renderLayerInfo.layers.data();
 	xrEndFrame(mSession, &frameEndInfo);
+}
+
+void XRSession_OpenGL::CreateActionSet(std::string actionSetName, std::string readableName, int priority)
+{
+	XrActionSetCreateInfo actionSetCI{ XR_TYPE_ACTION_SET_CREATE_INFO };
+	strncpy(actionSetCI.actionSetName, actionSetName.c_str(), XR_MAX_ACTION_SET_NAME_SIZE);
+	strncpy(actionSetCI.localizedActionSetName, readableName.c_str(), XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
+	actionSetCI.priority = priority;
+
+	xrCreateActionSet(mXrInstanceManager->GetInstance(), &actionSetCI, &mActionSet);
+
+	auto CreateAction = [this](XrAction& xrAction, const char* name, XrActionType xrActionType, std::vector<const char*> subactionPaths = {}) -> void
+		{
+			XrActionCreateInfo actionCI{ XR_TYPE_ACTION_CREATE_INFO };
+			actionCI.actionType = xrActionType;
+			std::vector<XrPath> subactionXrPaths;
+
+			for (auto p : subactionPaths)
+			{
+				subactionXrPaths.push_back(mXrInstanceManager->CreateXrPath(p));
+			}
+			actionCI.countSubactionPaths = (uint32_t)subactionXrPaths.size();
+			actionCI.subactionPaths = subactionXrPaths.data();
+			strncpy(actionCI.actionName, name, XR_MAX_ACTION_NAME_SIZE);
+			strncpy(actionCI.localizedActionName, name, XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+			xrCreateAction(mActionSet, &actionCI, &xrAction);
+		};
+
+	CreateAction(mGrabAction, "grab-object", XR_ACTION_TYPE_FLOAT_INPUT, { "/user/hand/left", "/user/hand/right" });
+	CreateAction(mPalmPoseAction, "palm-pose", XR_ACTION_TYPE_POSE_INPUT, { "/user/hand/left", "/user/hand/right" });
+	CreateAction(mBuzzAction, "buzz", XR_ACTION_TYPE_VIBRATION_OUTPUT, { "/user/hand/left", "/user/hand/right" });
+
+	// XrPaths for subaction path names
+	mHandPaths[0] = mXrInstanceManager->CreateXrPath("/user/hand/left");
+	mHandPaths[1] = mXrInstanceManager->CreateXrPath("/user/hand/right");
+}
+
+void XRSession_OpenGL::SuggestBindings()
+{
+	auto SuggestBindings = [this](const char* profilePath, std::vector<XrActionSuggestedBinding> bindings) -> bool
+		{
+			XrInteractionProfileSuggestedBinding interactionProfileSuggestedBinding{ XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING };
+			interactionProfileSuggestedBinding.interactionProfile = mXrInstanceManager->CreateXrPath(profilePath);
+			interactionProfileSuggestedBinding.suggestedBindings = bindings.data();
+			interactionProfileSuggestedBinding.countSuggestedBindings = (uint32_t)bindings.size();
+
+			if (xrSuggestInteractionProfileBindings(mXrInstanceManager->GetInstance(), &interactionProfileSuggestedBinding) == XrResult::XR_SUCCESS)
+				return true;
+
+			printf("Failed to suggest bindings with %s!", profilePath);
+			return false;
+		};
+
+	bool anyOK = false;
+	// For native support, that profile can be called; such as /interaction_profiles/oculus/touch_controller - mainly for extended function with that hardware such as squeezing with the touch controllers
+	anyOK |= SuggestBindings("/interaction_profiles/khr/simple_controller", {
+		{mGrabAction, mXrInstanceManager->CreateXrPath("/user/hand/right/input/select/click")},
+		{mGrabAction, mXrInstanceManager->CreateXrPath("/user/hand/left/input/select/click")},
+		{mPalmPoseAction, mXrInstanceManager->CreateXrPath("/user/hand/left/input/grip/pose")},
+		{mPalmPoseAction, mXrInstanceManager->CreateXrPath("/user/hand/right/input/grip/pose")},
+		{mBuzzAction, mXrInstanceManager->CreateXrPath("/user/hand/left/output/haptic")},
+		{mBuzzAction, mXrInstanceManager->CreateXrPath("/user/hand/right/output/haptic")} });
+
+	if (!anyOK)
+		throw;
+}
+
+void XRSession_OpenGL::RecordCurrentBindings()
+{
+	if (mSession)
+	{
+		XrInteractionProfileState interactionProfile = { XR_TYPE_INTERACTION_PROFILE_STATE, 0, 0 };
+		xrGetCurrentInteractionProfile(mSession, mHandPaths[0], &interactionProfile);
+		if (interactionProfile.interactionProfile)
+			printf("user/hand/left ActiveProfile %s", mXrInstanceManager->FromXrPath(interactionProfile.interactionProfile).c_str());
+		xrGetCurrentInteractionProfile(mSession, mHandPaths[1], & interactionProfile);
+		if (interactionProfile.interactionProfile)
+			printf("user/hand/right ActiveProfile %s", mXrInstanceManager->FromXrPath(interactionProfile.interactionProfile).c_str());
+	}
+}
+
+void XRSession_OpenGL::CreateActionPoses()
+{
+	auto CreateActionPoseSpace = [this](XrSession session, XrAction xrAction, const char* subactionPath = nullptr) -> XrSpace
+		{
+			XrSpace xrSpace;
+			const XrPosef xrPoseIdentity = { {0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f} };
+
+			XrActionSpaceCreateInfo actionSpaceCI{ XR_TYPE_ACTION_SPACE_CREATE_INFO };
+			actionSpaceCI.action = xrAction;
+			actionSpaceCI.poseInActionSpace = xrPoseIdentity;
+			if (subactionPath)
+				actionSpaceCI.subactionPath = mXrInstanceManager->CreateXrPath(subactionPath);
+			xrCreateActionSpace(session, &actionSpaceCI, &xrSpace);
+			return xrSpace;
+		};
+	mHandPoseSpace[0] = CreateActionPoseSpace(mSession, mPalmPoseAction, "/user/hand/left");
+	mHandPoseSpace[1] = CreateActionPoseSpace(mSession, mPalmPoseAction, "/user/hand/right");
+}
+
+void XRSession_OpenGL::AttachActionSet()
+{
+	// Attach action set to session, multiple can be attached to one session
+	XrSessionActionSetsAttachInfo actionSetAttachInfo{ XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO };
+	actionSetAttachInfo.countActionSets = 1;
+	actionSetAttachInfo.actionSets = &mActionSet;
+	xrAttachSessionActionSets(mSession, &actionSetAttachInfo);
+}
+
+void XRSession_OpenGL::PollActions(XrTime predictedTime)
+{
+	XrActiveActionSet activeActionSet{};
+	activeActionSet.actionSet = mActionSet;
+	activeActionSet.subactionPath = XR_NULL_PATH;
+
+	XrActionsSyncInfo actionsSyncInfo{ XR_TYPE_ACTIONS_SYNC_INFO };
+	actionsSyncInfo.countActiveActionSets = 1;
+	actionsSyncInfo.activeActionSets = &activeActionSet;
+	xrSyncActions(mSession, &actionsSyncInfo);
+
+	XrActionStateGetInfo actionStateGetInfo{ XR_TYPE_ACTION_STATE_GET_INFO };
+	actionStateGetInfo.action = mPalmPoseAction;
+
+	// For each hand get pose state
+	for (int i = 0; i < 2; i++)
+	{
+		actionStateGetInfo.subactionPath = mHandPaths[i];
+		xrGetActionStatePose(mSession, &actionStateGetInfo, &mHandPoseState[i]);
+		if (mHandPoseState[i].isActive)
+		{
+			XrSpaceLocation spaceLocation{ XR_TYPE_SPACE_LOCATION };
+			XrResult result = xrLocateSpace(mHandPoseSpace[i], mLocalSpace, predictedTime, &spaceLocation);
+			if (XR_UNQUALIFIED_SUCCESS(result) &&
+				(spaceLocation.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0 &&
+				(spaceLocation.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT) != 0)
+				mHandPose[i] = spaceLocation.pose;
+			else
+				mHandPoseState[i].isActive = false;
+		}
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		actionStateGetInfo.action = mGrabAction;
+		actionStateGetInfo.subactionPath = mHandPaths[i];
+		xrGetActionStateFloat(mSession, &actionStateGetInfo, &mGrabState[i]);
+	}
+	//for (int i = 0; i < 2; i++)
+	//{
+	//	mBuzz[i] *= 0.5f;
+	//	if (mBuzz[i] < 0.01f)
+	//		mBuzz[i] = 0.0f;
+	//	XrHapticVibration vibration{ XR_TYPE_HAPTIC_VIBRATION };
+	//	vibration.amplitude = mBuzz[i];
+	//	vibration.duration = 3000000000.0f;
+	//	vibration.frequency = XR_FREQUENCY_UNSPECIFIED;
+
+	//	XrHapticActionInfo hapticActionInfo{ XR_TYPE_HAPTIC_ACTION_INFO };
+	//	hapticActionInfo.action = mBuzzAction;
+	//	hapticActionInfo.subactionPath = mHandPaths[i];
+	//	xrApplyHapticFeedback(mSession, &hapticActionInfo, (XrHapticBaseHeader*)&vibration);
+	//}
+}
+
+void XRSession_OpenGL::ObjectInteraction()
+{
+	for (int i = 0; i < 2; i++)
+	{
+		if (mGrabState[i].isActive && mGrabState[i].currentState > 0.5f)
+		{
+			if (!mGrabHapticTriggered[i])
+			{
+				XrHapticVibration vibration{ XR_TYPE_HAPTIC_VIBRATION };
+				vibration.amplitude = 1.0f;
+				vibration.duration = 150000000.0f;
+				vibration.frequency = XR_FREQUENCY_UNSPECIFIED;
+
+				// Prepare haptic action
+				XrHapticActionInfo hapticActionInfo{ XR_TYPE_HAPTIC_ACTION_INFO };
+				hapticActionInfo.action = mBuzzAction;
+				hapticActionInfo.subactionPath = mHandPaths[i];
+
+				xrApplyHapticFeedback(mSession, &hapticActionInfo, reinterpret_cast<XrHapticBaseHeader*>(&vibration));
+
+				mGrabHapticTriggered[i] = true;
+			}
+
+			if (mHandPoseState[i].isActive)
+			{
+				// TODO: Need to get closest object and cap off at a certain range so you have to be near an object to pick it up
+
+				glm::vec3 handPosition = glm::vec3(
+					mHandPose[i].position.x,
+					mHandPose[i].position.y,
+					mHandPose[i].position.z
+				);
+
+				glm::quat handOrientation = glm::quat(
+					mHandPose[i].orientation.w,
+					mHandPose[i].orientation.x,
+					mHandPose[i].orientation.y,
+					mHandPose[i].orientation.z
+				);
+
+				glm::vec3 localOffset(0.0f, -0.2f, 0.0f);
+				glm::vec3 worldOffset = handOrientation * localOffset;
+				glm::vec3 objectPosition = handPosition + worldOffset;
+
+				mRenderer->UpdatePrimaryObject(objectPosition, handOrientation, {0.0f, 0.0f, 0.0f});
+				// TODO: Could possibly call a release function when letting go of the object 
+			}
+		}
+		else
+		{
+			mGrabHapticTriggered[i] = false;
+		}
+	}
 }

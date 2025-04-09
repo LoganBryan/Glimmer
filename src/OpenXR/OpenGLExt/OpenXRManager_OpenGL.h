@@ -30,7 +30,7 @@ public:
 		delete mInstance;
 	}
 
-	bool Init() override;
+	bool Init(XRApplicationInfo applicationInfo) override;
 	void Run() override;
 	void Destroy() override;
 

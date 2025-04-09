@@ -1,6 +1,6 @@
 #include "OpenXRManager_OpenGL.h"
 
-bool OpenXRManager_OpenGL::Init()
+bool OpenXRManager_OpenGL::Init(XRApplicationInfo applicationInfo)
 {
     sharedContext = wglCreateContext(mHDC);
     if (!wglShareLists(mGLRC, sharedContext))
@@ -10,7 +10,7 @@ bool OpenXRManager_OpenGL::Init()
     }
 
     mInstance = new OpenXRInstance_OpenGL();
-    mInstance->CreateInstance();
+    mInstance->CreateInstance(applicationInfo.applicationName, applicationInfo.applicationVersion, applicationInfo.engineName, applicationInfo.engineVersion);
     mInstance->CreateDebugMessenger();
     mInstance->GetInstanceProperties();
     mInstance->CreateSystemID();
@@ -18,7 +18,11 @@ bool OpenXRManager_OpenGL::Init()
     mInstance->GetEnvironmentBlendModes();
 
     mSession = new XRSession_OpenGL(mInstance, mHDC, mGLRC, mWindow);
+    mSession->CreateActionSet("glimmer-primary-actionset", "Glimmer Primary ActionSet", 0);
+    mSession->SuggestBindings();
     mSession->CreateSession();
+    mSession->CreateActionPoses();
+    mSession->AttachActionSet();
     mSession->CreateReferenceSpace();
 
     mSwapchainManager = new SwapchainManager<XrSwapchainImageOpenGLKHR, OpenGLSwapchainTraits>(mSession->GetSession(), mInstance->GetViewConfigurationViews());

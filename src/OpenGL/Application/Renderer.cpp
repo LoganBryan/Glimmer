@@ -37,12 +37,13 @@ void Renderer::Init()
 	//mainShader.Load("shaders/xrShader.vert", "shaders/xrShader.frag");
 
 	// Load skybox textures
-	skyboxTexture = Utils::GenerateCubemap(skyboxFaces);
+	skyboxTexture = Utils::GenerateCubemapCompressed(skyboxFaces);
 
 	Viewer viewer;
 	//GltfLoader gltf2Object;
 	//GltfLoader gltf3Object;
 	auto gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.gltf");
+	auto controller = std::filesystem::path("assets/models/cube/Cube.gltf");
 	//auto gltfFile = std::filesystem::path("assets/models/flightHelm/FlightHelmet.gltf");
 	glfwSetWindowUserPointer(window, &viewer);
 
@@ -59,6 +60,12 @@ void Renderer::Init()
 	skyboxShader.SetInt("skybox", 0);
 
 	gltfObject.LoadModel(gltfFile, mainShader);
+	gltfObject.GetTransform().position = glm::vec3(0.0f, 1.0f, -0.5f);
+	gltfObject.GetTransform().rotation = glm::vec3(1.5f, 0.0f, 0.0f);
+	gltfObject.GetTransform().scale = glm::vec3(0.25f);
+
+	handObjects[0].LoadModel(controller, mainShader);
+	handObjects[1].LoadModel(controller, mainShader);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -152,8 +159,9 @@ void Renderer::RenderEye(glm::mat4& view, glm::mat4& projection, GLuint framebuf
 	mainShader.SetMatrix4("view", view);
 
 	// Render object(s)
-	glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
+	//glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::mat4 model = gltfObject.GetTransform().GetMatrix();
+	//model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
 	mainShader.SetMatrix4("model", model);
 	gltfObject.DrawModel();
 
@@ -174,4 +182,50 @@ void Renderer::RenderEye(glm::mat4& view, glm::mat4& projection, GLuint framebuf
 
 	glDepthFunc(GL_LESS);
 	glDepthMask(GL_TRUE);
+}
+
+void Renderer::RenderHands(const std::array<XrPosef, 2>& handPoses, const std::array<XrActionStatePose, 2>& handStates)
+{
+	glDisable(GL_STENCIL_TEST);
+
+	mainShader.Use();
+	for (int i = 0; i < 2; i++)
+	{
+		if (handStates[i].isActive)
+		{
+			glm::vec3 handPos = glm::vec3(
+				handPoses[i].position.x,
+				handPoses[i].position.y,
+				handPoses[i].position.z
+			);
+			glm::quat handRot = glm::quat(
+				handPoses[i].orientation.w,
+				handPoses[i].orientation.x,
+				handPoses[i].orientation.y,
+				handPoses[i].orientation.z
+			);
+
+			handObjects[i].GetTransform().position = handPos;
+			handObjects[i].GetTransform().rotation = handRot;
+			handObjects[i].GetTransform().scale = glm::vec3(0.1f);
+
+			glm::mat4 model = handObjects[i].GetTransform().GetMatrix();
+			mainShader.SetMatrix4("model", model);
+			
+			handObjects[i].DrawModel();
+		}
+	}
+
+	glEnable(GL_STENCIL_TEST);
+}
+
+void Renderer::UpdatePrimaryObject(glm::vec3 position, glm::quat rotation, glm::vec3 scale)
+{
+	scale.x = scale.x <= 0.0f ? gltfObject.GetTransform().scale.x : scale.x;
+	scale.y = scale.y <= 0.0f ? gltfObject.GetTransform().scale.y : scale.y;
+	scale.z = scale.z <= 0.0f ? gltfObject.GetTransform().scale.z : scale.z;
+
+	gltfObject.GetTransform().position = position;
+	gltfObject.GetTransform().rotation = rotation;
+	gltfObject.GetTransform().scale = scale;
 }

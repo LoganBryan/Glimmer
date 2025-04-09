@@ -17,6 +17,18 @@ using SwapchainManager_OpenGL = SwapchainManager<XrSwapchainImageOpenGLKHR, Open
 class XRSession_OpenGL : public OpenXRSession
 {
 public:
+	// Interactions
+	void CreateActionSet(std::string actionSetName, std::string readableName, int priority) override;
+	void SuggestBindings() override;
+	void RecordCurrentBindings() override;
+
+	void CreateActionPoses() override;
+	void AttachActionSet() override;
+
+	void PollActions(XrTime predictedTime) override;
+	void ObjectInteraction() override;
+
+public:
 	XRSession_OpenGL(OpenXRInstance_OpenGL* oXrInstance, HDC hdc, HGLRC glrc, GLFWwindow* window) :
 		mXrInstanceManager(oXrInstance), mSwapchainManager(nullptr), m_hdc(hdc), m_glrc(glrc), mRenderer(nullptr), mWindow(window) {}
 
@@ -58,23 +70,16 @@ public:
 	}
 
 	void CreateSession() override;
-	inline void DestroySession() override {
-		if (mSession != XR_NULL_HANDLE)
-			xrDestroySession(mSession);
-	}
 	XrSession GetSession() override { return mSession; }
 	void PollSystemEvents() override;
 	void PollEvents() override;
-	void CreateReferenceSpace() override;
-	void DestroyReferenceSpace() override;
 	bool RenderLayer(RenderLayerInfo& renderlayerInfo) override;
 	void RenderDesktopWindow() override;
 	void RenderFrame() override;
 
 	inline void SetSwapchainManager(SwapchainManager<XrSwapchainImageOpenGLKHR, OpenGLSwapchainTraits>* swapchainManager) { mSwapchainManager = swapchainManager; }
 	inline void SetRenderer(Renderer* renderer) { mRenderer = renderer; }
-	inline bool IsApplicationRunning() { return mApplicationRunning; }
-	inline bool IsSessionRunning() { return mSessionRunning; }
+
 private:
 	HDC m_hdc;
 	HGLRC m_glrc;
@@ -83,15 +88,5 @@ private:
 	SwapchainManager<XrSwapchainImageOpenGLKHR, OpenGLSwapchainTraits>* mSwapchainManager;
 	Renderer* mRenderer;
 	GLFWwindow* mWindow;
-
-	XrSpace mLocalSpace = XR_NULL_HANDLE;
-	XrSession mSession = XR_NULL_HANDLE;
-
-	std::vector<XrView> mLastFrameViews;
-	std::mutex mGLMutex;
-	std::atomic<bool> mSessionRunning{ false };
-	std::atomic<bool> mApplicationRunning{ true };
-
-	XrSessionState mSessionState = XR_SESSION_STATE_UNKNOWN;
 };
 

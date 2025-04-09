@@ -16,6 +16,8 @@ bool GltfLoader::LoadModel(std::filesystem::path filePath, Shader& shader)
 	// Create a default material
 	auto& defaultMaterial = viewer.materials.emplace_back();
 	defaultMaterial.baseColorFactor = fastgltf::math::fvec4(1.0f);
+	defaultMaterial.metallicFactor = 0.0f;
+	defaultMaterial.roughnessFactor = 1.0f;
 	defaultMaterial.alphaCutoff = 0.0f;
 	defaultMaterial.flags = 0;
 
@@ -326,9 +328,31 @@ bool GltfLoader::LoadMaterial(fastgltf::Material& material)
 	uniforms.alphaCutoff = material.alphaCutoff;
 
 	uniforms.baseColorFactor = material.pbrData.baseColorFactor;
+	uniforms.metallicFactor = material.pbrData.metallicFactor;
+	uniforms.roughnessFactor = material.pbrData.roughnessFactor;
 	if (material.pbrData.baseColorTexture.has_value())
 	{
 		uniforms.flags |= MaterialUniformFlags::HasBaseColorTexture;
+	}
+
+	if (material.pbrData.metallicRoughnessTexture.has_value())
+	{
+		uniforms.flags |= MaterialUniformFlags::HasMetallicRoughnessTexture;
+	}
+
+	if (material.normalTexture.has_value())
+	{
+		uniforms.flags |= MaterialUniformFlags::HasNormalTexture;
+	}
+
+	if (material.occlusionTexture.has_value())
+	{
+		uniforms.flags |= MaterialUniformFlags::HasOcclusionTexture;
+	}
+
+	if (material.emissiveTexture.has_value())
+	{
+		uniforms.flags |= MaterialUniformFlags::HasEmissiveTexture;
 	}
 
 	viewer.materials.emplace_back(uniforms);

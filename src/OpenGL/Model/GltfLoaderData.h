@@ -2,6 +2,8 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+#include <glm/gtc/quaternion.hpp>
+
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
 #include <fastgltf/tools.hpp>
@@ -70,12 +72,18 @@ enum MaterialUniformFlags : std::uint32_t
 {
 	None = 0 << 0,
 	HasBaseColorTexture = 1 << 0,
+	HasMetallicRoughnessTexture = 1 << 1,
+	HasNormalTexture = 1 << 2,
+	HasEmissiveTexture = 1 << 3,
+	HasOcclusionTexture = 1 << 4
 };
 
 struct MaterialUniforms
 {
 	fastgltf::math::fvec4 baseColorFactor;
 	float alphaCutoff = 0.0f;
+	float metallicFactor = 0.0f;
+	float roughnessFactor = 0.0f;
 	std::uint32_t flags = 0;
 
 	fastgltf::math::fvec2 padding;
@@ -97,4 +105,18 @@ struct Viewer
 
 	std::size_t sceneIndex = 0;
 	std::size_t materialVariant = 0;
+};
+
+struct Transform
+{
+	glm::vec3 position;
+	glm::quat rotation;
+	glm::vec3 scale;
+
+	glm::mat4 GetMatrix() const{
+		glm::mat4 trans = glm::translate(glm::mat4(1.0f), position);
+		glm::mat4 rot = glm::mat4_cast(rotation);
+		glm::mat4 sca = glm::scale(glm::mat4(1.0f), scale);
+		return trans * rot * sca;
+	}
 };
