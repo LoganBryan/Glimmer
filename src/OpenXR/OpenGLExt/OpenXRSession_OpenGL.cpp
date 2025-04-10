@@ -476,74 +476,128 @@ void XRSession_OpenGL::PollActions(XrTime predictedTime)
 		actionStateGetInfo.subactionPath = mHandPaths[i];
 		xrGetActionStateFloat(mSession, &actionStateGetInfo, &mGrabState[i]);
 	}
-	//for (int i = 0; i < 2; i++)
-	//{
-	//	mBuzz[i] *= 0.5f;
-	//	if (mBuzz[i] < 0.01f)
-	//		mBuzz[i] = 0.0f;
-	//	XrHapticVibration vibration{ XR_TYPE_HAPTIC_VIBRATION };
-	//	vibration.amplitude = mBuzz[i];
-	//	vibration.duration = 3000000000.0f;
-	//	vibration.frequency = XR_FREQUENCY_UNSPECIFIED;
+}
 
-	//	XrHapticActionInfo hapticActionInfo{ XR_TYPE_HAPTIC_ACTION_INFO };
-	//	hapticActionInfo.action = mBuzzAction;
-	//	hapticActionInfo.subactionPath = mHandPaths[i];
-	//	xrApplyHapticFeedback(mSession, &hapticActionInfo, (XrHapticBaseHeader*)&vibration);
-	//}
+glm::vec3 XRSession_OpenGL::GetHandPosition(int handIndex) const
+{
+	return glm::vec3(
+		mHandPose[handIndex].position.x,
+		mHandPose[handIndex].position.y,
+		mHandPose[handIndex].position.z
+	);
+}
+
+glm::quat XRSession_OpenGL::GetHandRotation(int handIndex) const
+{
+	return  glm::quat(
+		mHandPose[handIndex].orientation.w,
+		mHandPose[handIndex].orientation.x,
+		mHandPose[handIndex].orientation.y,
+		mHandPose[handIndex].orientation.z
+	);
 }
 
 void XRSession_OpenGL::ObjectInteraction()
 {
+	const float GRABDISTANCE = 0.2f; // TODO: Allow this to be set!
+
 	for (int i = 0; i < 2; i++)
 	{
 		if (mGrabState[i].isActive && mGrabState[i].currentState > 0.5f)
 		{
-			if (!mGrabHapticTriggered[i])
+			if (mGrabbedObject[i] == -1)
 			{
-				XrHapticVibration vibration{ XR_TYPE_HAPTIC_VIBRATION };
-				vibration.amplitude = 1.0f;
-				vibration.duration = 150000000.0f;
-				vibration.frequency = XR_FREQUENCY_UNSPECIFIED;
+				// Ray dir from hand pose
+				glm::vec3 handPos = GetHandPosition(i);
+				glm::quat handRot = GetHandRotation(i);
+				glm::vec3 rayDir = handRot * glm::vec3(0, -1, 0);
 
-				// Prepare haptic action
-				XrHapticActionInfo hapticActionInfo{ XR_TYPE_HAPTIC_ACTION_INFO };
-				hapticActionInfo.action = mBuzzAction;
-				hapticActionInfo.subactionPath = mHandPaths[i];
+				// Find closest object along ray
+				int closestObject = -1;
+				float closestDistance = FLT_MAX;
+				glm::vec3 closestHitPoint;
 
-				xrApplyHapticFeedback(mSession, &hapticActionInfo, reinterpret_cast<XrHapticBaseHeader*>(&vibration));
+				for (size_t j = 0; j < mRenderer->GetObjects().size(); j++)
+				{
+					auto& object = mRenderer->GetObjects()[j];
+					if (object->isGrabbed) continue;
 
-				mGrabHapticTriggered[i] = true;
+					// Simple sphere 
+					float radius = 0.5f;
+					glm::vec3 handToObject = object->transform.position - handPos;
+					float t = glm::dot(handToObject, rayDir);
+
+					if (t >= 0)
+					{
+						glm::vec3 nearest = handPos + rayDir * t;
+						float distance = glm::length(nearest - object->transform.position);
+
+						if (distance < radius && t < closestDistance && t < GRABDISTANCE)
+						{
+							closestDistance = t;
+							closestObject = j;
+							closestHitPoint = nearest;
+						}
+					}
+				}
+
+				if (closestObject != -1)
+				{
+					mGrabbedObject[i] = closestObject;
+					glm::vec3 grabOffset = mRenderer->GetObjects()[closestObject]->transform.position - closestHitPoint;
+
+					mRenderer->GetObjects()[closestObject]->grabOffset = grabOffset;
+					mRenderer->GetObjects()[closestObject]->isGrabbed = true;
+					mRenderer->GetObjects()[closestObject]->grabbedByHand = i;
+
+					// Apply offset from hand local space
+					glm::quat handInv = glm::inverse(handRot);
+					mRenderer->GetObjects()[closestObject]->grabRotationOffset = handInv * mRenderer->GetObjects()[closestObject]->transform.rotation;
+					mRenderer->GetObjects()[closestObject]->grabOffset = handInv * (mRenderer->GetObjects()[closestObject]->transform.position - handPos);
+				}
 			}
 
-			if (mHandPoseState[i].isActive)
+			if (mGrabbedObject[i] != -1)
 			{
-				// TODO: Need to get closest object and cap off at a certain range so you have to be near an object to pick it up
+				auto& object = mRenderer->GetObjects()[mGrabbedObject[i]];
+				glm::vec3 handPos = GetHandPosition(i);
+				glm::quat handRot = GetHandRotation(i);
 
-				glm::vec3 handPosition = glm::vec3(
-					mHandPose[i].position.x,
-					mHandPose[i].position.y,
-					mHandPose[i].position.z
-				);
+				//// Apply offset from hand local space
+				//glm::quat handInv = glm::inverse(handRot);
+				//object->grabRotationOffset = handInv * object->transform.rotation;
+				//object->grabOffset = handInv * (object->transform.position - handPos);
 
-				glm::quat handOrientation = glm::quat(
-					mHandPose[i].orientation.w,
-					mHandPose[i].orientation.x,
-					mHandPose[i].orientation.y,
-					mHandPose[i].orientation.z
-				);
+				object->transform.position = handPos + (handRot * object->grabOffset);
+				object->transform.rotation = handRot * (object->grabRotationOffset);
 
-				glm::vec3 localOffset(0.0f, -0.2f, 0.0f);
-				glm::vec3 worldOffset = handOrientation * localOffset;
-				glm::vec3 objectPosition = handPosition + worldOffset;
+				if (!mGrabHapticTriggered[i])
+				{
+					XrHapticVibration vibration{ XR_TYPE_HAPTIC_VIBRATION };
+					vibration.amplitude = 1.0f;
+					vibration.duration = 150000000.0f;
+					vibration.frequency = XR_FREQUENCY_UNSPECIFIED;
 
-				mRenderer->UpdatePrimaryObject(objectPosition, handOrientation, {0.0f, 0.0f, 0.0f});
-				// TODO: Could possibly call a release function when letting go of the object 
+					// Prepare haptic action
+					XrHapticActionInfo hapticActionInfo{ XR_TYPE_HAPTIC_ACTION_INFO };
+					hapticActionInfo.action = mBuzzAction;
+					hapticActionInfo.subactionPath = mHandPaths[i];
+
+					xrApplyHapticFeedback(mSession, &hapticActionInfo, reinterpret_cast<XrHapticBaseHeader*>(&vibration));
+
+					mGrabHapticTriggered[i] = true;
+				}
 			}
 		}
 		else
 		{
-			mGrabHapticTriggered[i] = false;
+			if (mGrabbedObject[i] != -1)
+			{
+				mRenderer->GetObjects()[mGrabbedObject[i]]->isGrabbed = false;
+				mRenderer->GetObjects()[mGrabbedObject[i]]->grabbedByHand = -1;
+				mGrabbedObject[i] = -1;
+				mGrabHapticTriggered[i] = false;
+			}
 		}
 	}
 }

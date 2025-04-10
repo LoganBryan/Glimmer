@@ -27,10 +27,13 @@ public:
 	bool LoadModel(std::filesystem::path filePath, Shader& shader);
 	void DrawModel();
 
+	// TODO: eventually remove this from loader, it should be handled by a scene manager or object class. This class should only be responsible for model data
 	inline Transform& GetTransform() { return transform; }
 private:
 	Viewer viewer;
 	Transform transform;
+	glm::mat4 relativeTransform;
+	bool isGrabbed = false;
 
 	bool LoadFromPath(std::filesystem::path filePath);
 	bool LoadMeshData(fastgltf::Mesh& mesh);

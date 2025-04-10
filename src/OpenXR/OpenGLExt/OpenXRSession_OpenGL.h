@@ -26,6 +26,9 @@ public:
 	void AttachActionSet() override;
 
 	void PollActions(XrTime predictedTime) override;
+
+	glm::vec3 GetHandPosition(int handIndex) const;
+	glm::quat GetHandRotation(int handIndex) const;
 	void ObjectInteraction() override;
 
 public:

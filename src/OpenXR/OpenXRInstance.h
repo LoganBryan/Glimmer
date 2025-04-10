@@ -41,6 +41,7 @@ public:
 	inline virtual void GetInstanceProperties()
 	{
 		XrInstanceProperties instanceProperties{ XR_TYPE_INSTANCE_PROPERTIES };
+
 		OPENXR_CHECK(xrGetInstanceProperties(mXrInstance, &instanceProperties), "Failed to get InstanceProperties!");
 
 		printf("OpenXR Runtime: %s", instanceProperties.runtimeName);

@@ -73,6 +73,7 @@ protected:
 	XrAction mGrabAction;
 
 	XrActionStateFloat mGrabState[2] = { {XR_TYPE_ACTION_STATE_FLOAT}, {XR_TYPE_ACTION_STATE_FLOAT} };
+	int mGrabbedObject[2] = {-1, -1};
 
 	XrAction mBuzzAction; // Haptic output
 	float mBuzz[2] = { 0, 0 }; // Current haptic output for each controller

@@ -84,12 +84,12 @@ project "Glimmer"
         "%{LibraryDirs.OpenXR}",
         "%{LibraryDirs.OpenXRLoader}"
     }
-
+    
     links
     {
         "glfw3.lib",
         "openxr-gfxwrapper.lib",
-        "openxr_loaderd.lib",
+        "%{cfg.buildcfg:lower() == 'debug' and 'openxr_loaderd.lib' or 'openxr_loader.lib'}",
         "opengl32.lib"
     }
 
@@ -113,7 +113,7 @@ project "Glimmer"
         }
 
     filter "configurations:Release"
-        defines { "NDEBUG" }
+        defines { "NDEBUG", "_ITERATOR_DEBUG_LEVEL=0" }
         runtime "Release"
         optimize "on"
         buildoptions {"/Ob0"}

@@ -59,10 +59,27 @@ void Renderer::Init()
 	skyboxShader.Use();
 	skyboxShader.SetInt("skybox", 0);
 
-	gltfObject.LoadModel(gltfFile, mainShader);
-	gltfObject.GetTransform().position = glm::vec3(0.0f, 1.0f, -0.5f);
-	gltfObject.GetTransform().rotation = glm::vec3(1.5f, 0.0f, 0.0f);
-	gltfObject.GetTransform().scale = glm::vec3(0.25f);
+	//gltfObject.LoadModel(gltfFile, mainShader);
+	//gltfObject.GetTransform().position = glm::vec3(0.0f, 1.0f, -0.5f);
+	//gltfObject.GetTransform().rotation = glm::vec3(1.5f, 0.0f, 0.0f);
+	//gltfObject.GetTransform().scale = glm::vec3(0.25f);
+
+	// TODO: Should probably seperate scene setup from renderer, and then extend addobject function (to add a unique id, DisplayName, set transform matrix etc)
+	AddObject(gltfFile);
+	AddObject(gltfFile);
+	AddObject(gltfFile);
+
+	sceneObjects[0]->transform.position = glm::vec3(0.0f, 1.0f, -0.5f);
+	sceneObjects[0]->transform.rotation = glm::vec3(1.5f, 0.0f, 0.0f);
+	sceneObjects[0]->transform.scale = glm::vec3(0.25f);
+
+	sceneObjects[1]->transform.position = glm::vec3(-2.0f, 1.0f, -0.5f);
+	sceneObjects[1]->transform.rotation = glm::vec3(1.5f, 0.0f, 0.0f);
+	sceneObjects[1]->transform.scale = glm::vec3(0.5f);
+
+	sceneObjects[2]->transform.position = glm::vec3(2.0f, 1.0f, -0.5f);
+	sceneObjects[2]->transform.rotation = glm::vec3(1.5f, 0.0f, 0.0f);
+	sceneObjects[2]->transform.scale = glm::vec3(0.75f);
 
 	handObjects[0].LoadModel(controller, mainShader);
 	handObjects[1].LoadModel(controller, mainShader);
@@ -98,10 +115,10 @@ void Renderer::Render(float width, float height)
 	mainShader.SetMatrix4("projection", camMatrices.projection);
 	mainShader.SetMatrix4("view", camMatrices.view);
 
-	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	mainShader.SetMatrix4("model", model);
+	//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	//mainShader.SetMatrix4("model", model);
 
-	gltfObject.DrawModel();
+	//gltfObject.DrawModel();
 
 	// Skybox - Drawn last
 	glDepthFunc(GL_LEQUAL);
@@ -160,10 +177,18 @@ void Renderer::RenderEye(glm::mat4& view, glm::mat4& projection, GLuint framebuf
 
 	// Render object(s)
 	//glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glm::mat4 model = gltfObject.GetTransform().GetMatrix();
+	//glm::mat4 model = gltfObject.GetTransform().GetMatrix();
 	//model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
-	mainShader.SetMatrix4("model", model);
-	gltfObject.DrawModel();
+	//mainShader.SetMatrix4("model", model);
+	//gltfObject.DrawModel();
+
+	// TODO: BATCH RENDERING!!!
+	for (auto& obj : sceneObjects)
+	{
+		glm::mat4 model = obj->transform.GetMatrix();
+		mainShader.SetMatrix4("model", model);
+		obj->model.DrawModel();
+	}
 
 	// Render skybox
 	glDepthMask(GL_FALSE);
@@ -219,13 +244,31 @@ void Renderer::RenderHands(const std::array<XrPosef, 2>& handPoses, const std::a
 	glEnable(GL_STENCIL_TEST);
 }
 
-void Renderer::UpdatePrimaryObject(glm::vec3 position, glm::quat rotation, glm::vec3 scale)
+void Renderer::AddObject(const std::filesystem::path& modelPath)
 {
-	scale.x = scale.x <= 0.0f ? gltfObject.GetTransform().scale.x : scale.x;
-	scale.y = scale.y <= 0.0f ? gltfObject.GetTransform().scale.y : scale.y;
-	scale.z = scale.z <= 0.0f ? gltfObject.GetTransform().scale.z : scale.z;
+	auto newObject = std::make_unique<SceneObject>();
+	newObject->model.LoadModel(modelPath, mainShader);  // TODO: might eventually support changing shader
+	newObject->transform.position = glm::vec3(0, 0, 0);
 
-	gltfObject.GetTransform().position = position;
-	gltfObject.GetTransform().rotation = rotation;
-	gltfObject.GetTransform().scale = scale;
+	sceneObjects.emplace_back(std::move(newObject));
 }
+
+//void Renderer::UpdateGrabbedObject(int objectIndex, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& grabOffset)
+//{
+//	if (objectIndex >= 0 && objectIndex < sceneObjects.size())
+//	{
+//		sceneObjects[objectIndex].transform.position = position + grabOffset;
+//		sceneObjects[objectIndex].transform.rotation = rotation;
+//	}
+//}
+
+//void Renderer::UpdatePrimaryObject(glm::vec3 position, glm::quat rotation, glm::vec3 scale)
+//{
+//	scale.x = scale.x <= 0.0f ? gltfObject.GetTransform().scale.x : scale.x;
+//	scale.y = scale.y <= 0.0f ? gltfObject.GetTransform().scale.y : scale.y;
+//	scale.z = scale.z <= 0.0f ? gltfObject.GetTransform().scale.z : scale.z;
+//
+//	gltfObject.GetTransform().position = position;
+//	gltfObject.GetTransform().rotation = rotation;
+//	gltfObject.GetTransform().scale = scale;
+//}
