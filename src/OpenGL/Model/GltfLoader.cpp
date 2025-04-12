@@ -17,7 +17,7 @@ bool GltfLoader::LoadModel(std::filesystem::path filePath, Shader& shader)
 	auto& defaultMaterial = viewer.materials.emplace_back();
 	defaultMaterial.baseColorFactor = fastgltf::math::fvec4(1.0f);
 	defaultMaterial.metallicFactor = 0.0f;
-	defaultMaterial.roughnessFactor = 1.0f;
+	defaultMaterial.roughnessFactor = 0.0f;
 	defaultMaterial.alphaCutoff = 0.0f;
 	defaultMaterial.flags = 0;
 
@@ -34,6 +34,11 @@ bool GltfLoader::LoadModel(std::filesystem::path filePath, Shader& shader)
 	{
 		LoadMeshData(mesh);
 	}
+	for (auto& skin : viewer.asset.skins)
+	{
+		LoadSkin(skin);
+	}
+
 	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
 	printf("fastGLTF loaded in %lld ms\n", diff.count());
 
@@ -58,21 +63,95 @@ bool GltfLoader::LoadModel(std::filesystem::path filePath, Shader& shader)
 	shader.SetInt("occlusionTexture", 4);
 	shader.SetInt("skybox", 5);
 
+
 	viewer.sceneIndex = viewer.asset.defaultScene.value_or(0);
 
 	return true;
 }
 
-void GltfLoader::DrawModel()
+void GltfLoader::DrawModel(Shader& shader, glm::mat4& objectTransform)
 {
 	if (!viewer.asset.scenes.empty() && viewer.sceneIndex < viewer.asset.scenes.size())
 	{
 		// TODO: Probably should use fastgltfs matrix transform (for camera and objects etc)
-		fastgltf::iterateSceneNodes(viewer.asset, viewer.sceneIndex, fastgltf::math::fmat4x4(), [&](fastgltf::Node& node, fastgltf::math::fmat4x4 matrix) 
+		fastgltf::iterateSceneNodes(viewer.asset, viewer.sceneIndex, fastgltf::math::fmat4x4(), [&](fastgltf::Node& node, fastgltf::math::fmat4x4 matrix)
 			{
+				glm::mat4 transform = glm::make_mat4(matrix.data());
+
 				if (node.meshIndex.has_value())
+				{
+					bool hasSkin = node.skinIndex.has_value();
+					shader.Use();
+					shader.SetBool("uHasSkinning", hasSkin);
+					if (hasSkin && node.skinIndex.value() < viewer.skins.size())
+					{
+						Skin& skin = viewer.skins[node.skinIndex.value()];
+						glBindBufferBase(GL_UNIFORM_BUFFER, 1, skin.jointMatrixBuffer);
+					}
+					glm::mat4 finalModel = objectTransform * transform;
+					shader.SetMatrix4("model", finalModel);
 					DrawMesh(*node.meshIndex);
+				}
 			});
+	}
+}
+
+void GltfLoader::UpdateSkins(glm::mat4& objectTransform) {
+	for (auto& skin : viewer.skins) 
+	{
+		for (auto& joint : skin.joints) 
+		{
+			joint.globalTransform = joint.localTransform;
+		}
+
+		// Update hierarchy starting from roots
+		for (auto& joint : skin.joints) 
+		{
+			if (joint.parentIndex == -1) 
+			{
+				joint.globalTransform = objectTransform * joint.localTransform;
+				UpdateJointHeirarchy(skin, joint);
+			}
+		}
+
+		glNamedBufferSubData(
+			skin.jointMatrixBuffer,
+			0,
+			sizeof(glm::mat4) * skin.jointMatrices.size(),
+			skin.jointMatrices.data()
+		);
+	}
+}
+
+void GltfLoader::UpdateJointHeirarchy(Skin& skin, Joint& joint) {
+	if (joint.parentIndex != -1) {
+		if (joint.parentIndex >= skin.joints.size()) 
+		{
+			std::cerr << "Invalid parent index " << joint.parentIndex << " for joint " << joint.index << std::endl;
+			return;
+		}
+		joint.globalTransform = skin.joints[joint.parentIndex].globalTransform * joint.localTransform;
+	}
+	else 
+	{
+		joint.globalTransform = joint.localTransform;
+	}
+
+	if (joint.index >= skin.jointMatrices.size()) 
+	{
+		std::cerr << "Joint index out of range: " << joint.index << " (max " << skin.jointMatrices.size() << ")" << std::endl;
+		return;
+	}
+	skin.jointMatrices[joint.index] = joint.globalTransform * joint.inverseBindMatrix;
+
+	for (int childIndex : joint.children) 
+	{
+		if (childIndex < 0 || childIndex >= skin.joints.size()) 
+		{
+			std::cerr << "Invalid child index " << childIndex << " for joint " << joint.index << std::endl;
+			continue;
+		}
+		UpdateJointHeirarchy(skin, skin.joints[childIndex]);
 	}
 }
 
@@ -86,20 +165,44 @@ bool GltfLoader::LoadFromPath(std::filesystem::path filePath)
 
 	wprintf(L"Loading %s...\n", filePath.wstring().c_str());
 
-	// Parse gLTF file
+	// Determine file type on extension, gltf or glb - it might be better to read the header for magic bytes, but this is fine for now
+	const auto ext = filePath.extension().string();
+	bool isGLB = (ext == ".glb" || ext == ".GLB");
+
+	fastgltf::Parser parser(supportedExtensions);
+
+	decltype(viewer.asset) loadedAsset;
+	auto loadedFromPath = fastgltf::MappedGltfFile::FromPath(filePath);
+
+	if (isGLB)
 	{
-		fastgltf::Parser parser(supportedExtensions);
-
-		auto gltfFile = fastgltf::MappedGltfFile::FromPath(filePath);
-		if (!bool(gltfFile))
+		if (!bool(loadedFromPath))
 		{
-			std::string_view err = fastgltf::getErrorMessage(gltfFile.error());
-			printf("%.*s\n", static_cast<int>(err.size()), err.data());
-
+			std::string_view err = fastgltf::getErrorMessage(loadedFromPath.error());
+			printf("Error reading GLB file: %.*s!\n", static_cast<int>(err.size()), err.data());
 			return false;
 		}
 
-		auto asset = parser.loadGltf(gltfFile.get(), filePath.parent_path(), gltfOptions);
+		auto asset = parser.loadGltfBinary(loadedFromPath.get(), filePath.parent_path(), gltfOptions);
+		if (asset.error() != fastgltf::Error::None)
+		{
+			std::string_view err = fastgltf::getErrorMessage(asset.error());
+			printf("Error parsing GLB asset: %.*s!\n", static_cast<int>(err.size()), err.data());
+			return false;
+		}
+
+		loadedAsset = std::move(asset.get());
+	}
+	else
+	{
+		if (!bool(loadedFromPath))
+		{
+			std::string_view err = fastgltf::getErrorMessage(loadedFromPath.error());
+			printf("Error reading glTF file: %.*s\n", static_cast<int>(err.size()), err.data());
+			return false;
+		}
+
+		auto asset = parser.loadGltf(loadedFromPath.get(), filePath.parent_path(), gltfOptions);
 		if (asset.error() != fastgltf::Error::None)
 		{
 			std::string_view err = fastgltf::getErrorMessage(asset.error());
@@ -108,9 +211,11 @@ bool GltfLoader::LoadFromPath(std::filesystem::path filePath)
 			return false;
 		}
 
-		viewer.asset = std::move(asset.get());
+		loadedAsset = std::move(asset.get());
+
 	}
 
+	viewer.asset = std::move(loadedAsset);
 	return true;
 }
 
@@ -288,6 +393,44 @@ bool GltfLoader::LoadMeshData(fastgltf::Mesh& mesh)
 			glVertexArrayVertexBuffer(VAO, 3, primitive.vertexBuffer, offsetof(Vertex, tangent), sizeof(Vertex));
 		}
 
+		if (const auto* jointsIt = it->findAttribute("JOINTS_0"); jointsIt != it->attributes.end())
+		{
+			auto& jointsAccessor = asset.accessors[jointsIt->accessorIndex];
+			if (!jointsAccessor.bufferViewIndex.has_value()) continue;
+
+			auto componentType = jointsAccessor.componentType;
+			auto* vertices = static_cast<Vertex*>(glMapNamedBuffer(primitive.vertexBuffer, GL_WRITE_ONLY));
+
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::uvec4>(asset, jointsAccessor, [&](fastgltf::math::uvec4 joints, size_t id)
+				{
+					vertices[id].joints = joints;
+				});
+			glUnmapNamedBuffer(primitive.vertexBuffer);
+
+			glEnableVertexArrayAttrib(VAO, 4);
+			glVertexArrayAttribIFormat(VAO, 4, 4, GL_UNSIGNED_INT, offsetof(Vertex, joints));
+			glVertexArrayAttribBinding(VAO, 4, 0);
+			glVertexArrayVertexBuffer(VAO, 4, primitive.vertexBuffer, offsetof(Vertex, joints), sizeof(Vertex));
+		}
+
+		if (const auto* weightsIt = it->findAttribute("WEIGHTS_0"); weightsIt != it->attributes.end())
+		{
+			auto& weightsAccessor = asset.accessors[weightsIt->accessorIndex];
+			if (!weightsAccessor.bufferViewIndex.has_value()) continue;
+
+			auto* vertices = static_cast<Vertex*>(glMapNamedBuffer(primitive.vertexBuffer, GL_WRITE_ONLY));
+			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, weightsAccessor, [&](fastgltf::math::fvec4 weights, size_t id)
+				{
+					vertices[id].weights = weights;
+				});
+			glUnmapNamedBuffer(primitive.vertexBuffer);
+
+			glEnableVertexArrayAttrib(VAO, 5);
+			glVertexArrayAttribFormat(VAO, 5, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, weights));
+			glVertexArrayAttribBinding(VAO, 5, 0);
+			glVertexArrayVertexBuffer(VAO, 5, primitive.vertexBuffer, offsetof(Vertex, weights), sizeof(Vertex));
+		}
+
 		// Gen indirect draw command
 		auto& draw = primitive.draw;
 		draw.instanceCount = 1;
@@ -328,8 +471,8 @@ bool GltfLoader::LoadMaterial(fastgltf::Material& material)
 	uniforms.alphaCutoff = material.alphaCutoff;
 
 	uniforms.baseColorFactor = material.pbrData.baseColorFactor;
-	uniforms.metallicFactor = material.pbrData.metallicFactor;
-	uniforms.roughnessFactor = material.pbrData.roughnessFactor;
+	//uniforms.metallicFactor = material.pbrData.metallicFactor;
+	//uniforms.roughnessFactor = material.pbrData.roughnessFactor;
 	if (material.pbrData.baseColorTexture.has_value())
 	{
 		uniforms.flags |= MaterialUniformFlags::HasBaseColorTexture;
@@ -356,6 +499,166 @@ bool GltfLoader::LoadMaterial(fastgltf::Material& material)
 	}
 
 	viewer.materials.emplace_back(uniforms);
+	return true;
+}
+
+bool GltfLoader::LoadSkin(fastgltf::Skin& skin)
+{
+	Skin newSkin;
+
+	std::cout << "Loading skin with " << skin.joints.size() << " joints\n";
+
+	if (!skin.inverseBindMatrices)
+	{
+		printf("Skin missing inverse bind matrices accessor!\n");
+		return false;
+	}
+
+	const auto ibmAccessorIndex = skin.inverseBindMatrices.value();
+	if (ibmAccessorIndex >= viewer.asset.accessors.size())
+	{
+		printf("Invalid inverse bind matrices accessor index: %zu!\n", ibmAccessorIndex);
+		return false;
+	}
+
+	auto& ibmAccessor = viewer.asset.accessors[ibmAccessorIndex];
+	if (ibmAccessor.type != fastgltf::AccessorType::Mat4 || ibmAccessor.componentType != fastgltf::ComponentType::Float)
+	{
+		printf("Invalid inverse bind matrices accessor type!\n");
+		return false;
+	}
+
+	// Load inverse bind matrices
+	try
+	{
+		newSkin.jointMatrices.reserve(ibmAccessor.count);
+		fastgltf::iterateAccessor<fastgltf::math::fmat4x4>(viewer.asset, ibmAccessor, [&](const fastgltf::math::fmat4x4& matrix)
+			{
+				newSkin.jointMatrices.emplace_back(glm::make_mat4(matrix.data()));
+			});
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Failed to load inverse bind matrices: " << e.what() << std::endl;
+		return false;
+	}
+
+	if (newSkin.jointMatrices.size() != skin.joints.size())
+	{
+		std::cerr << "Mismatch between joint count (" << skin.joints.size() << ") and inverse bind matrix count (" << newSkin.jointMatrices.size() << ")" << std::endl;
+		return false;
+	}
+
+	// Create joints
+	for (auto& jointIndex : skin.joints)
+	{
+		if (jointIndex >= viewer.asset.nodes.size())
+		{
+			printf("Invalid joint node index: %zu!\n", jointIndex);
+			return false;
+		}
+
+		auto& node = viewer.asset.nodes[jointIndex];
+		Joint joint;
+		joint.nodeIndex = jointIndex;
+		joint.name = node.name.empty() ? "unnamed_joint" + std::to_string(jointIndex) : node.name.c_str();
+
+		// Get transform from node
+		try 
+		{
+
+			std::visit(fastgltf::visitor{
+				[&](const fastgltf::TRS& trs)
+				{
+					if (trs.scale[0] == 0.0f || trs.scale[1] == 0.0f || trs.scale[2] == 0.0f)
+						throw std::runtime_error("Invalid zero scale in TRS!");
+
+					// Construct matrix from TRS
+					glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(trs.translation[0], trs.translation[1], trs.translation[2]));
+
+					glm::quat rotation(trs.rotation[3], trs.rotation[0], trs.rotation[1], trs.rotation[2]);
+					if (abs(1.0f - glm::length(rotation)) > 0.001f)
+						throw std::runtime_error("Non-normalized rotation quaternion!");
+
+					glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(trs.scale[0], trs.scale[1], trs.scale[2]));
+
+					joint.localTransform = translation * glm::mat4_cast(rotation) * scale;
+
+				},
+				[&](const fastgltf::math::fmat4x4& matrix)
+				{
+					// Use matrix from variant directly
+					const glm::mat4 m = glm::make_mat4(matrix.data());
+					if (glm::determinant(m) == 0.0f)
+						throw std::runtime_error("Degenerate transformation matrix!");
+
+					joint.localTransform = m;
+				}
+			}, node.transform);
+
+			newSkin.joints.push_back(joint);
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Error processing joint " << jointIndex << " (" << joint.name << "): " << e.what() << std::endl;
+			return false;
+		}
+	}
+
+	std::unordered_map<size_t, size_t> nodeParentMap;
+
+	// Create parent map for all nodes
+	for (size_t nodeId = 0; nodeId < viewer.asset.nodes.size(); nodeId++)
+	{
+		const auto& node = viewer.asset.nodes[nodeId];
+		for (const auto& childId : node.children)
+			nodeParentMap[childId] = nodeId;
+	}
+
+	for (size_t i = 0; i < skin.joints.size(); i++)
+	{
+		newSkin.joints[i].inverseBindMatrix = newSkin.jointMatrices[i];
+	}
+
+	for (size_t i = 0; i < newSkin.joints.size(); i++)
+	{
+		auto& joint = newSkin.joints[i];
+		const auto& node = viewer.asset.nodes[joint.nodeIndex];
+
+		newSkin.joints[i].index = static_cast<int>(i);
+
+		// Find parent in skin joints
+		if (auto parentIt = nodeParentMap.find(joint.nodeIndex); parentIt != nodeParentMap.end())
+		{
+			// Is parent node part of skin joint
+			auto skinParentIt = std::find(skin.joints.begin(), skin.joints.end(), parentIt->second);
+
+			if (skinParentIt != skin.joints.end())
+			{
+				joint.parentIndex = std::distance(skin.joints.begin(), skinParentIt);
+			}
+		}
+
+		// Find children in skin joints
+		for (auto childNodeIndex : node.children)
+		{
+			auto skinChildIt = std::find(skin.joints.begin(), skin.joints.end(), childNodeIndex);
+
+			if (skinChildIt != skin.joints.end())
+			{
+				int childSkinIndex = std::distance(skin.joints.begin(), skinChildIt);
+				joint.children.push_back(childSkinIndex);
+			}
+		}
+
+	}
+
+	// Create Buffer for joint matrices
+	glCreateBuffers(1, &newSkin.jointMatrixBuffer);
+	glNamedBufferStorage(newSkin.jointMatrixBuffer, sizeof(glm::mat4) * MAX_JOINTS, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+	viewer.skins.push_back(newSkin);
+
 	return true;
 }
 
@@ -417,6 +720,7 @@ bool GltfLoader::LoadImage(fastgltf::Image& image)
 	glGenerateTextureMipmap(texture);
 
 	viewer.textures.emplace_back(Texture{ texture });
+
 	return true;
 }
 

@@ -33,6 +33,14 @@ public:
 	inline void SetVec3(const std::string& name, float x, float y, float z) const { glUniform3f(glGetUniformLocation(programID, name.c_str()), x, y, z); }
 
 	inline void SetMatrix4(const std::string& name, glm::mat4& value) const {glUniformMatrix4fv(glGetUniformLocation(programID, name.c_str()), 1, GL_FALSE, &value[0][0]);}
+	
+	inline void SetBlockBinding(const std::string& name, GLuint bindingPoint) const 
+	{ 
+		GLuint blockIndex = glGetUniformBlockIndex(programID, name.c_str()); 
+		if (blockIndex != GL_INVALID_INDEX)
+			glUniformBlockBinding(programID, blockIndex, bindingPoint);
+	}
+
 	inline unsigned int GetID() const { return programID; }
 
 private:

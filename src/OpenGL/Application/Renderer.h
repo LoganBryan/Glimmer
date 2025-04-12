@@ -47,6 +47,45 @@ public:
 
 	inline std::vector<std::unique_ptr<SceneObject>>& GetObjects() { return sceneObjects; }
 
+    // TODO: This is just temp for visualizing
+    struct LineVertex {
+        XrVector3f position;
+        XrVector3f color;
+    };
+
+    inline void RenderLine(const XrVector3f& start, const XrVector3f& end, const XrVector3f& color) {
+
+		lineShader.Use();
+		glDisable(GL_DEPTH_TEST);
+
+        LineVertex vertices[2] = {
+            {start, color},
+            {end, color}
+        };
+
+        GLuint vao, vbo;
+        glGenVertexArrays(1, &vao);
+        glGenBuffers(1, &vbo);
+
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)offsetof(LineVertex, color));
+        glEnableVertexAttribArray(1);
+
+        glDrawArrays(GL_LINES, 0, 2);
+
+        glDeleteBuffers(1, &vbo);
+        glDeleteVertexArrays(1, &vao);
+
+		glEnable(GL_DEPTH_TEST);
+		glBindVertexArray(0);
+    }
+
 private:
 	GLFWwindow* window;
 
@@ -60,6 +99,8 @@ private:
 	Shader mainShader;
 	//GltfLoader gltfObject;
 	GltfLoader handObjects[2];
+
+	Shader lineShader;
 };
 
 #endif // !RENDERER_H

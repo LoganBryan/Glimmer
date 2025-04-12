@@ -62,8 +62,22 @@ void Application::SetupCallbacks()
 
 }
 
+// For rendering without an XR device attached
 void Application::Run()
 {
+	Renderer renderer(window);
+	renderer.Init();
 
+	while (!glfwWindowShouldClose(window))
+	{
+		CalculateDelta();
+		renderer.Render(width, height);
+
+		Camera::Camera::GetInstance()->ProcessKeyboard(window, deltaTime);
+
+		glfwSwapInterval(0);
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
 }
 

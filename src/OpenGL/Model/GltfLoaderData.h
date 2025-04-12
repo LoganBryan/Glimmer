@@ -8,6 +8,8 @@
 #include <fastgltf/types.hpp>
 #include <fastgltf/tools.hpp>
 
+#define MAX_JOINTS 128
+
 static constexpr auto supportedExtensions = 
 	fastgltf::Extensions::KHR_mesh_quantization | 
 	fastgltf::Extensions::KHR_texture_transform | 
@@ -31,12 +33,33 @@ struct IndirectDrawCommand
 	std::uint32_t baseInstance;
 };
 
+struct Joint
+{
+	size_t nodeIndex;
+	int parentIndex = -1;
+	int index = -1;
+	std::vector<int> children;
+	glm::mat4 inverseBindMatrix;
+	glm::mat4 localTransform;
+	glm::mat4 globalTransform;
+	std::string name;
+};
+
+struct Skin
+{
+	std::vector<Joint> joints;
+	std::vector<glm::mat4> jointMatrices;
+	GLuint jointMatrixBuffer;
+};
+
 struct Vertex
 {
 	fastgltf::math::fvec3 position;
 	fastgltf::math::fvec3 normal;
 	fastgltf::math::fvec4 tangent;
 	fastgltf::math::fvec2 uv;
+	fastgltf::math::uvec4 joints;
+	fastgltf::math::fvec4 weights;
 };
 
 struct Primitive
@@ -98,6 +121,8 @@ struct Viewer
 
 	std::vector<MaterialUniforms> materials;
 	std::vector<GLuint> materialBuffers;
+
+	std::vector<Skin> skins;
 
 	GLint uvOffsetUniform = GL_NONE;
 	GLint uvScaleUniform = GL_NONE;

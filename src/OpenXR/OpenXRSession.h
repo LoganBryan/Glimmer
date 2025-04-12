@@ -16,6 +16,12 @@ public:
 		std::vector<XrCompositionLayerProjectionView> layerProjectionViews;
 	};
 
+	struct Hand
+	{
+		XrHandJointLocationEXT mJointLocations[XR_HAND_JOINT_COUNT_EXT];
+		XrHandTrackerEXT mHandTracker = 0;
+	};
+
 public:
 	// Interactions
 	virtual void CreateActionSet(std::string actionSetName, std::string readableName, int priority) = 0;
@@ -28,12 +34,20 @@ public:
 	virtual void PollActions(XrTime predictedTime) = 0;
 	virtual void ObjectInteraction() = 0;
 
+	virtual void CreateHandTrackers() = 0;
+
 public:
 	virtual void CreateSession() = 0;
 	inline virtual void DestroySession()
 	{
 		if (mSession != XR_NULL_HANDLE)
 			xrDestroySession(mSession);
+
+		//for (int i = 0; i < 2; i++)
+		//{
+		//	if (xrDestroyHandTrackerEXT)
+		//		xrDestroyHandTrackerEXT(mHands[i].mHandTracker);
+		//}
 	}
 	virtual XrSession GetSession() = 0;
 	virtual void PollSystemEvents() = 0;
@@ -90,4 +104,6 @@ protected:
 	{
 		{{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -mViewHeight}},
 		{{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -mViewHeight}} };
+
+	Hand mHands[2];
 };

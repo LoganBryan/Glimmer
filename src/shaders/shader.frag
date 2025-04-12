@@ -68,7 +68,7 @@ void main()
 	vec3 viewNormal = normalize(TBN * tangentNormal);
 
 	// Metallic-Roughness map
-	vec2 metallicRoughness = vec2(material.roughnessFactor, material.metallicFactor);
+	vec2 metallicRoughness = vec2(material.metallicFactor, material.roughnessFactor);
 	if ((material.flags & HAS_METALLIC_ROUGHNESS) == HAS_METALLIC_ROUGHNESS) {
 		metallicRoughness = texture(metallicRoughnessTexture, transformUV(texCoord)).gb;
 	} 

@@ -25,7 +25,9 @@ public:
 	~GltfLoader();
 
 	bool LoadModel(std::filesystem::path filePath, Shader& shader);
-	void DrawModel();
+	void DrawModel(Shader& shader, glm::mat4& objectTransform);
+	void UpdateSkins(glm::mat4& objectTransform);
+	void UpdateJointHeirarchy(Skin& skin, Joint& joint);
 
 	// TODO: eventually remove this from loader, it should be handled by a scene manager or object class. This class should only be responsible for model data
 	inline Transform& GetTransform() { return transform; }
@@ -38,6 +40,8 @@ private:
 	bool LoadFromPath(std::filesystem::path filePath);
 	bool LoadMeshData(fastgltf::Mesh& mesh);
 	bool LoadMaterial(fastgltf::Material& material);
+
+	bool LoadSkin(fastgltf::Skin& skin);
 
 	bool LoadImage(fastgltf::Image& image);
 

@@ -23,6 +23,12 @@ bool OpenXRManager_OpenGL::Init(XRApplicationInfo applicationInfo)
     mSession->CreateSession();
     mSession->CreateActionPoses();
     mSession->AttachActionSet();
+
+    if (mInstance->handTrackingSystemProperties.supportsHandTracking)
+    {
+        mSession->CreateHandTrackers();
+    }
+
     mSession->CreateReferenceSpace();
 
     mSwapchainManager = new SwapchainManager<XrSwapchainImageOpenGLKHR, OpenGLSwapchainTraits>(mSession->GetSession(), mInstance->GetViewConfigurationViews());

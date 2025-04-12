@@ -30,6 +30,18 @@ public:
 	glm::vec3 GetHandPosition(int handIndex) const;
 	glm::quat GetHandRotation(int handIndex) const;
 	void ObjectInteraction() override;
+	void CreateHandTrackers() override 
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			Hand& hand = mHands[i];
+			XrHandTrackerCreateInfoEXT xrHandTrackerCreateInfo = { XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT };
+			xrHandTrackerCreateInfo.hand = i == 0 ? XR_HAND_LEFT_EXT : XR_HAND_RIGHT_EXT;
+			xrHandTrackerCreateInfo.handJointSet = XR_HAND_JOINT_SET_DEFAULT_EXT;
+
+			mXrInstanceManager->xrCreateHandTrackerEXT(mSession, &xrHandTrackerCreateInfo, &hand.mHandTracker);
+		}
+	}
 
 public:
 	XRSession_OpenGL(OpenXRInstance_OpenGL* oXrInstance, HDC hdc, HGLRC glrc, GLFWwindow* window) :

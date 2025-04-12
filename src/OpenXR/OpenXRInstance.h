@@ -13,6 +13,11 @@ class OpenXRInstance
 {
 public:
 	XrEnvironmentBlendMode mEnvironmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_MAX_ENUM;
+	XrSystemHandTrackingPropertiesEXT handTrackingSystemProperties = { XR_TYPE_SYSTEM_HAND_TRACKING_PROPERTIES_EXT };
+
+	PFN_xrCreateHandTrackerEXT xrCreateHandTrackerEXT = nullptr;
+	PFN_xrDestroyHandTrackerEXT xrDestroyHandTrackerEXT = nullptr;
+	PFN_xrLocateHandJointsEXT xrLocateHandJointsEXT = nullptr;
 
 public:
 	virtual ~OpenXRInstance() = default;
@@ -53,6 +58,8 @@ public:
 		XrSystemGetInfo systemGI{ XR_TYPE_SYSTEM_GET_INFO };
 		systemGI.formFactor = mFormFactor;
 		OPENXR_CHECK(xrGetSystem(mXrInstance, &systemGI, &mSystemID), "Failed to get SystemID!");
+
+		mSystemProperties.next = &handTrackingSystemProperties;
 
 		// Get system properties for general hardware and vendor info
 		OPENXR_CHECK(xrGetSystemProperties(mXrInstance, mSystemID, &mSystemProperties), "Failed to get SystemProperties!");

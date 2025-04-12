@@ -32,6 +32,7 @@ Renderer::~Renderer()
 void Renderer::Init()
 {
 	// Init shaders, load models, setup buffers etc
+	lineShader.Load("shaders/line.vert", "shaders/line.frag");
 	skyboxShader.Load("shaders/skybox.vert", "shaders/skybox.frag");
 	mainShader.Load("shaders/shader.vert", "shaders/shader.frag");
 	//mainShader.Load("shaders/xrShader.vert", "shaders/xrShader.frag");
@@ -43,7 +44,10 @@ void Renderer::Init()
 	//GltfLoader gltf2Object;
 	//GltfLoader gltf3Object;
 	auto gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.gltf");
-	auto controller = std::filesystem::path("assets/models/cube/Cube.gltf");
+	auto leftGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_left_model.glb");
+	auto rightGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_right_model.glb");
+
+	auto cesiumMan = std::filesystem::path("assets/models/man/CesiumMan.glb");
 	//auto gltfFile = std::filesystem::path("assets/models/flightHelm/FlightHelmet.gltf");
 	glfwSetWindowUserPointer(window, &viewer);
 
@@ -69,20 +73,17 @@ void Renderer::Init()
 	AddObject(gltfFile);
 	AddObject(gltfFile);
 
-	sceneObjects[0]->transform.position = glm::vec3(0.0f, 1.0f, -0.5f);
-	sceneObjects[0]->transform.rotation = glm::vec3(1.5f, 0.0f, 0.0f);
+	sceneObjects[0]->transform.position = glm::vec3(0.0f, 0.0f, -0.5f);
 	sceneObjects[0]->transform.scale = glm::vec3(0.25f);
 
 	sceneObjects[1]->transform.position = glm::vec3(-2.0f, 1.0f, -0.5f);
-	sceneObjects[1]->transform.rotation = glm::vec3(1.5f, 0.0f, 0.0f);
 	sceneObjects[1]->transform.scale = glm::vec3(0.5f);
 
 	sceneObjects[2]->transform.position = glm::vec3(2.0f, 1.0f, -0.5f);
-	sceneObjects[2]->transform.rotation = glm::vec3(1.5f, 0.0f, 0.0f);
 	sceneObjects[2]->transform.scale = glm::vec3(0.75f);
 
-	handObjects[0].LoadModel(controller, mainShader);
-	handObjects[1].LoadModel(controller, mainShader);
+	handObjects[0].LoadModel(leftGlove, mainShader);
+	handObjects[1].LoadModel(rightGlove, mainShader);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -115,10 +116,13 @@ void Renderer::Render(float width, float height)
 	mainShader.SetMatrix4("projection", camMatrices.projection);
 	mainShader.SetMatrix4("view", camMatrices.view);
 
-	//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	//mainShader.SetMatrix4("model", model);
-
-	//gltfObject.DrawModel();
+	for (auto& obj : sceneObjects)
+	{
+		glm::mat4 model = obj->transform.GetMatrix();
+		//mainShader.SetMatrix4("model", model);
+		obj->model.DrawModel(mainShader, model);
+		obj->model.UpdateSkins(model);
+	}
 
 	// Skybox - Drawn last
 	glDepthFunc(GL_LEQUAL);
@@ -175,19 +179,13 @@ void Renderer::RenderEye(glm::mat4& view, glm::mat4& projection, GLuint framebuf
 	mainShader.SetMatrix4("projection", projection);
 	mainShader.SetMatrix4("view", view);
 
-	// Render object(s)
-	//glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	//glm::mat4 model = gltfObject.GetTransform().GetMatrix();
-	//model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
-	//mainShader.SetMatrix4("model", model);
-	//gltfObject.DrawModel();
-
 	// TODO: BATCH RENDERING!!!
 	for (auto& obj : sceneObjects)
 	{
 		glm::mat4 model = obj->transform.GetMatrix();
-		mainShader.SetMatrix4("model", model);
-		obj->model.DrawModel();
+		//mainShader.SetMatrix4("model", model);
+		obj->model.DrawModel(mainShader, model);
+		obj->model.UpdateSkins(model);
 	}
 
 	// Render skybox
@@ -212,8 +210,8 @@ void Renderer::RenderEye(glm::mat4& view, glm::mat4& projection, GLuint framebuf
 void Renderer::RenderHands(const std::array<XrPosef, 2>& handPoses, const std::array<XrActionStatePose, 2>& handStates)
 {
 	glDisable(GL_STENCIL_TEST);
-
 	mainShader.Use();
+
 	for (int i = 0; i < 2; i++)
 	{
 		if (handStates[i].isActive)
@@ -232,12 +230,13 @@ void Renderer::RenderHands(const std::array<XrPosef, 2>& handPoses, const std::a
 
 			handObjects[i].GetTransform().position = handPos;
 			handObjects[i].GetTransform().rotation = handRot;
-			handObjects[i].GetTransform().scale = glm::vec3(0.1f);
+			handObjects[i].GetTransform().scale = glm::vec3(1.0f);
 
 			glm::mat4 model = handObjects[i].GetTransform().GetMatrix();
-			mainShader.SetMatrix4("model", model);
+			//mainShader.SetMatrix4("model", model);
 			
-			handObjects[i].DrawModel();
+			handObjects[i].DrawModel(mainShader, model);
+			handObjects[i].UpdateSkins(model);
 		}
 	}
 
@@ -252,23 +251,3 @@ void Renderer::AddObject(const std::filesystem::path& modelPath)
 
 	sceneObjects.emplace_back(std::move(newObject));
 }
-
-//void Renderer::UpdateGrabbedObject(int objectIndex, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& grabOffset)
-//{
-//	if (objectIndex >= 0 && objectIndex < sceneObjects.size())
-//	{
-//		sceneObjects[objectIndex].transform.position = position + grabOffset;
-//		sceneObjects[objectIndex].transform.rotation = rotation;
-//	}
-//}
-
-//void Renderer::UpdatePrimaryObject(glm::vec3 position, glm::quat rotation, glm::vec3 scale)
-//{
-//	scale.x = scale.x <= 0.0f ? gltfObject.GetTransform().scale.x : scale.x;
-//	scale.y = scale.y <= 0.0f ? gltfObject.GetTransform().scale.y : scale.y;
-//	scale.z = scale.z <= 0.0f ? gltfObject.GetTransform().scale.z : scale.z;
-//
-//	gltfObject.GetTransform().position = position;
-//	gltfObject.GetTransform().rotation = rotation;
-//	gltfObject.GetTransform().scale = scale;
-//}

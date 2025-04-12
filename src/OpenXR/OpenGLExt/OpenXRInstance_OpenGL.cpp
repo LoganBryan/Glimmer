@@ -13,6 +13,9 @@ void OpenXRInstance_OpenGL::CreateInstance(std::string applicationName, int appl
 	mInstanceExtensions.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	mInstanceExtensions.push_back("XR_KHR_opengl_enable");
 
+	mInstanceExtensions.push_back(XR_EXT_HAND_TRACKING_EXTENSION_NAME);
+	mInstanceExtensions.push_back(XR_EXT_HAND_INTERACTION_EXTENSION_NAME);
+
 	// Get all API layers from OpenXR runtime
 	uint32_t apiLayerCount = 0;
 	std::vector<XrApiLayerProperties> apiLayerProps;
@@ -58,4 +61,8 @@ void OpenXRInstance_OpenGL::CreateInstance(std::string applicationName, int appl
 	instanceCI.enabledExtensionCount = static_cast<uint32_t>(mActiveInstanceExtensions.size());
 	instanceCI.enabledExtensionNames = mActiveInstanceExtensions.data();
 	OPENXR_CHECK(xrCreateInstance(&instanceCI, &mXrInstance), "Failed to create instance!");
+
+	OPENXR_CHECK(xrGetInstanceProcAddr(mXrInstance, "xrCreateHandTrackerEXT", (PFN_xrVoidFunction*)&xrCreateHandTrackerEXT), "Failed to get xrCreateHandTrackerEXT.");
+	OPENXR_CHECK(xrGetInstanceProcAddr(mXrInstance, "xrDestroyHandTrackerEXT", (PFN_xrVoidFunction*)&xrDestroyHandTrackerEXT), "Failed to get xrDestroyHandTrackerEXT.");
+	OPENXR_CHECK(xrGetInstanceProcAddr(mXrInstance, "xrLocateHandJointsEXT", (PFN_xrVoidFunction*)&xrLocateHandJointsEXT), "Failed to get xrLocateHandJointsEXT.");
 }
