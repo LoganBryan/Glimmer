@@ -74,12 +74,15 @@ void Renderer::Init()
 	AddObject(gltfFile);
 
 	sceneObjects[0]->transform.position = glm::vec3(0.0f, 0.0f, -0.5f);
+	sceneObjects[0]->transform.rotation = glm::quat(1, 0, 0, 0);
 	sceneObjects[0]->transform.scale = glm::vec3(0.25f);
 
 	sceneObjects[1]->transform.position = glm::vec3(-2.0f, 1.0f, -0.5f);
+	sceneObjects[1]->transform.rotation = glm::quat(1, 0, 0, 0);
 	sceneObjects[1]->transform.scale = glm::vec3(0.5f);
 
 	sceneObjects[2]->transform.position = glm::vec3(2.0f, 1.0f, -0.5f);
+	sceneObjects[2]->transform.rotation = glm::quat(1, 0, 0, 0);
 	sceneObjects[2]->transform.scale = glm::vec3(0.75f);
 
 	handObjects[0].LoadModel(leftGlove, mainShader);
@@ -120,6 +123,34 @@ void Renderer::Render(float width, float height)
 	{
 		glm::mat4 model = obj->transform.GetMatrix();
 		//mainShader.SetMatrix4("model", model);
+
+		//glm::mat4 indexMatrix = glm::mat4(1.0f);
+		//indexMatrix = glm::rotate(indexMatrix, glm::radians(35.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+		//glm::mat4 middleMatrix = glm::mat4(1.0f);
+		//middleMatrix = glm::rotate(middleMatrix, glm::radians(20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+		//glm::mat4 ringMatrix = glm::mat4(1.0f);
+		//ringMatrix = glm::rotate(ringMatrix, glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+		//obj->model.UpdateJointTransform("finger_index_meta_l", indexMatrix);
+		//obj->model.UpdateJointTransform("finger_index_0_l", indexMatrix);
+		//obj->model.UpdateJointTransform("finger_index_1_l", indexMatrix);
+		//obj->model.UpdateJointTransform("finger_index_2_l", indexMatrix);
+		//obj->model.UpdateJointTransform("finger_index_l_end", indexMatrix);
+
+		//obj->model.UpdateJointTransform("finger_middle_meta_l", middleMatrix);
+		//obj->model.UpdateJointTransform("finger_middle_0_l", middleMatrix);
+		//obj->model.UpdateJointTransform("finger_middle_1_l", middleMatrix);
+		//obj->model.UpdateJointTransform("finger_middle_2_l", middleMatrix);
+		//obj->model.UpdateJointTransform("finger_middle_l_end", middleMatrix);
+
+		//obj->model.UpdateJointTransform("finger_ring_meta_l", ringMatrix);
+		//obj->model.UpdateJointTransform("finger_ring_0_l", ringMatrix);
+		//obj->model.UpdateJointTransform("finger_ring_1_l", ringMatrix);
+		//obj->model.UpdateJointTransform("finger_ring_2_l", ringMatrix);
+		//obj->model.UpdateJointTransform("finger_ring_l_end", ringMatrix);
+
 		obj->model.DrawModel(mainShader, model);
 		obj->model.UpdateSkins(model);
 	}
@@ -214,19 +245,22 @@ void Renderer::RenderHands(const std::array<XrPosef, 2>& handPoses, const std::a
 
 	for (int i = 0; i < 2; i++)
 	{
-		if (handStates[i].isActive)
-		{
-			glm::vec3 handPos = glm::vec3(
-				handPoses[i].position.x,
-				handPoses[i].position.y,
-				handPoses[i].position.z
-			);
-			glm::quat handRot = glm::quat(
-				handPoses[i].orientation.w,
-				handPoses[i].orientation.x,
-				handPoses[i].orientation.y,
-				handPoses[i].orientation.z
-			);
+		//if (handStates[i].isActive)
+		//{
+			glm::vec3 handPos = XrPoseToPosition(handPoses[i]);
+			glm::quat handRot = XrPoseToRotation(handPoses[i]);
+
+			//glm::vec3 handPos = glm::vec3(
+			//	handPoses[i].position.x,
+			//	handPoses[i].position.y,
+			//	handPoses[i].position.z
+			//);
+			//glm::quat handRot = glm::quat(
+			//	handPoses[i].orientation.w,
+			//	handPoses[i].orientation.x,
+			//	handPoses[i].orientation.y,
+			//	handPoses[i].orientation.z
+			//);
 
 			handObjects[i].GetTransform().position = handPos;
 			handObjects[i].GetTransform().rotation = handRot;
@@ -237,7 +271,7 @@ void Renderer::RenderHands(const std::array<XrPosef, 2>& handPoses, const std::a
 			
 			handObjects[i].DrawModel(mainShader, model);
 			handObjects[i].UpdateSkins(model);
-		}
+		//}
 	}
 
 	glEnable(GL_STENCIL_TEST);

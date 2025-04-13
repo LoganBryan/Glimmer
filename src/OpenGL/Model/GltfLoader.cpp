@@ -155,6 +155,38 @@ void GltfLoader::UpdateJointHeirarchy(Skin& skin, Joint& joint) {
 	}
 }
 
+bool GltfLoader::UpdateJointTransform(const std::string& jointName, const glm::mat4& transform)
+{
+	for (auto& skin : viewer.skins)
+	{
+		for (auto& joint : skin.joints)
+		{
+			if (joint.name == jointName)
+			{
+				joint.localTransform = joint.bindPose * transform;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+glm::mat4& GltfLoader::GetBindPoseTranslation(const std::string& jointName)
+{
+	glm::mat4 outPose(1.0f);
+	for (auto& skin : viewer.skins)
+	{
+		for (auto& joint : skin.joints)
+		{
+			if (joint.name == jointName)
+			{
+				return joint.bindPose;
+			}
+		}
+	}
+	return outPose;
+}
+
 bool GltfLoader::LoadFromPath(std::filesystem::path filePath)
 {
 	if (!std::filesystem::exists(filePath))
@@ -582,7 +614,9 @@ bool GltfLoader::LoadSkin(fastgltf::Skin& skin)
 
 					glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(trs.scale[0], trs.scale[1], trs.scale[2]));
 
-					joint.localTransform = translation * glm::mat4_cast(rotation) * scale;
+					glm::mat4 bindMatrix = translation * glm::mat4_cast(rotation) * scale;
+					joint.localTransform = bindMatrix;
+					joint.bindPose = bindMatrix;
 
 				},
 				[&](const fastgltf::math::fmat4x4& matrix)
@@ -593,6 +627,7 @@ bool GltfLoader::LoadSkin(fastgltf::Skin& skin)
 						throw std::runtime_error("Degenerate transformation matrix!");
 
 					joint.localTransform = m;
+					joint.bindPose = m;
 				}
 			}, node.transform);
 

@@ -42,11 +42,12 @@ public:
 			mXrInstanceManager->xrCreateHandTrackerEXT(mSession, &xrHandTrackerCreateInfo, &hand.mHandTracker);
 		}
 	}
-
+	void TrackHands(XrTime predictedTime) override;
 public:
 	XRSession_OpenGL(OpenXRInstance_OpenGL* oXrInstance, HDC hdc, HGLRC glrc, GLFWwindow* window) :
 		mXrInstanceManager(oXrInstance), mSwapchainManager(nullptr), m_hdc(hdc), m_glrc(glrc), mRenderer(nullptr), mWindow(window) {}
 
+	// This is mainly used for the camera
 	inline glm::mat4 XrPoseToGLMMatrix(const XrPosef& pose)
 	{
 		glm::quat rotation = glm::quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
@@ -54,6 +55,31 @@ public:
 		glm::mat4 orientationMat = glm::mat4_cast(rotation);
 		glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), position);
 		return glm::inverse(translationMat * orientationMat);
+	}
+
+	// Non-inversed pose to glm used for bone transforms
+	inline glm::mat4 XrPoseToGLMMatrixBone(const XrPosef& pose)
+	{
+		glm::quat rotation = glm::quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
+		glm::vec3 position = glm::vec3(pose.position.x, pose.position.y, pose.position.z);
+		glm::mat4 orientationMat = glm::mat4_cast(rotation);
+		glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), position);
+
+		return translationMat * orientationMat;
+	}
+
+	inline std::array<XrPosef, 2> GetHandTrackingWristPoses()
+	{
+		std::array<XrPosef, 2> wristPoses{};
+		for (int i = 0; i < 2; i++)
+		{
+			if (mXrInstanceManager->handTrackingSystemProperties.supportsHandTracking)
+				wristPoses[i] = mHands[i].mJointLocations[XR_HAND_JOINT_WRIST_EXT].pose;
+			else
+				wristPoses[i] = { {0,0,0,1}, {0,0,0} };
+		}
+
+		return wristPoses;
 	}
 
 	inline glm::mat4 CreateProjectionMatrix(XrFovf fov, float nearZ, float farZ)

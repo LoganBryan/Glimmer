@@ -43,6 +43,8 @@ struct Joint
 	glm::mat4 localTransform;
 	glm::mat4 globalTransform;
 	std::string name;
+
+	glm::mat4 bindPose;
 };
 
 struct Skin

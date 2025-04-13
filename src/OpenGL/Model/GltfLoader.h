@@ -18,6 +18,10 @@
 #include "GltfLoaderData.h"
 #include "OpenGL/Application/Shader.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
+
+// TODO: a lot of this class is slow/ inefficent with retrieving, setting, binding etc - need to improve most of it!
 class GltfLoader
 {
 public:
@@ -28,6 +32,9 @@ public:
 	void DrawModel(Shader& shader, glm::mat4& objectTransform);
 	void UpdateSkins(glm::mat4& objectTransform);
 	void UpdateJointHeirarchy(Skin& skin, Joint& joint);
+	bool UpdateJointTransform(const std::string& jointName, const glm::mat4& transform);
+
+	glm::mat4& GetBindPoseTranslation(const std::string& jointName);
 
 	// TODO: eventually remove this from loader, it should be handled by a scene manager or object class. This class should only be responsible for model data
 	inline Transform& GetTransform() { return transform; }

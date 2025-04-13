@@ -46,45 +46,17 @@ public:
 	//void UpdatePrimaryObject(glm::vec3 position, glm::quat rotation, glm::vec3 scale);
 
 	inline std::vector<std::unique_ptr<SceneObject>>& GetObjects() { return sceneObjects; }
+	inline std::array<GltfLoader, 2>& GetHands() { return handObjects; }
 
-    // TODO: This is just temp for visualizing
-    struct LineVertex {
-        XrVector3f position;
-        XrVector3f color;
-    };
+	inline glm::vec3 XrPoseToPosition(const XrPosef& pose)
+	{
+		return glm::vec3(pose.position.x, pose.position.y, pose.position.z);
+	}
 
-    inline void RenderLine(const XrVector3f& start, const XrVector3f& end, const XrVector3f& color) {
-
-		lineShader.Use();
-		glDisable(GL_DEPTH_TEST);
-
-        LineVertex vertices[2] = {
-            {start, color},
-            {end, color}
-        };
-
-        GLuint vao, vbo;
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)0);
-        glEnableVertexAttribArray(0);
-
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LineVertex), (void*)offsetof(LineVertex, color));
-        glEnableVertexAttribArray(1);
-
-        glDrawArrays(GL_LINES, 0, 2);
-
-        glDeleteBuffers(1, &vbo);
-        glDeleteVertexArrays(1, &vao);
-
-		glEnable(GL_DEPTH_TEST);
-		glBindVertexArray(0);
-    }
+	inline glm::quat XrPoseToRotation(const XrPosef& pose)
+	{
+		return glm::quat(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);
+	}
 
 private:
 	GLFWwindow* window;
@@ -98,7 +70,8 @@ private:
 
 	Shader mainShader;
 	//GltfLoader gltfObject;
-	GltfLoader handObjects[2];
+	//GltfLoader handObjects[2];
+	std::array<GltfLoader, 2> handObjects;
 
 	Shader lineShader;
 };

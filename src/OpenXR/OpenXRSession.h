@@ -22,6 +22,117 @@ public:
 		XrHandTrackerEXT mHandTracker = 0;
 	};
 
+	const std::array<int, XR_HAND_JOINT_COUNT_EXT> HAND_JOINT_PARENT_INDICES =
+	{
+		XR_HAND_JOINT_WRIST_EXT,
+		-1,
+
+		XR_HAND_JOINT_WRIST_EXT,
+		XR_HAND_JOINT_THUMB_METACARPAL_EXT,
+		XR_HAND_JOINT_THUMB_PROXIMAL_EXT,
+		XR_HAND_JOINT_THUMB_DISTAL_EXT,
+
+		XR_HAND_JOINT_WRIST_EXT,
+		XR_HAND_JOINT_INDEX_METACARPAL_EXT,
+		XR_HAND_JOINT_INDEX_PROXIMAL_EXT,
+		XR_HAND_JOINT_INDEX_INTERMEDIATE_EXT,
+		XR_HAND_JOINT_INDEX_DISTAL_EXT,
+
+		XR_HAND_JOINT_WRIST_EXT,
+		XR_HAND_JOINT_MIDDLE_METACARPAL_EXT,
+		XR_HAND_JOINT_MIDDLE_PROXIMAL_EXT,
+		XR_HAND_JOINT_MIDDLE_INTERMEDIATE_EXT,
+		XR_HAND_JOINT_MIDDLE_DISTAL_EXT,
+
+		XR_HAND_JOINT_WRIST_EXT,
+		XR_HAND_JOINT_RING_METACARPAL_EXT,
+		XR_HAND_JOINT_RING_PROXIMAL_EXT,
+		XR_HAND_JOINT_RING_INTERMEDIATE_EXT,
+		XR_HAND_JOINT_RING_DISTAL_EXT,
+
+		XR_HAND_JOINT_WRIST_EXT,
+		XR_HAND_JOINT_LITTLE_METACARPAL_EXT,
+		XR_HAND_JOINT_LITTLE_PROXIMAL_EXT,
+		XR_HAND_JOINT_LITTLE_INTERMEDIATE_EXT,
+		XR_HAND_JOINT_LITTLE_DISTAL_EXT
+	};
+
+	// TODO: This should support rigs that may be set up in a different way, maybe allowing the developer to map their rig?
+	std::string GetBoneName(XrHandJointEXT joint, bool isLeftHand)
+	{
+		const std::string side = isLeftHand ? "_l" : "_r";
+		const std::string fingerBase = "finger_";
+
+		switch (joint)
+		{
+		case XR_HAND_JOINT_WRIST_EXT:
+			return "wrist" + side;
+
+			// Thumb
+		case XR_HAND_JOINT_THUMB_METACARPAL_EXT:
+			return fingerBase + "thumb_meta" + side;
+		case XR_HAND_JOINT_THUMB_PROXIMAL_EXT:
+			return fingerBase + "thumb_0" + side;
+		case XR_HAND_JOINT_THUMB_DISTAL_EXT:
+			return fingerBase + "thumb_1" + side;
+		case XR_HAND_JOINT_THUMB_TIP_EXT:
+			return fingerBase + "thumb" + side + "_end";
+
+			// Index
+		case XR_HAND_JOINT_INDEX_METACARPAL_EXT:
+			return fingerBase + "index_meta" + side;
+		case XR_HAND_JOINT_INDEX_PROXIMAL_EXT:
+			return fingerBase + "index_0" + side;
+		case XR_HAND_JOINT_INDEX_INTERMEDIATE_EXT:
+			return fingerBase + "index_1" + side;
+		case XR_HAND_JOINT_INDEX_DISTAL_EXT:
+			return fingerBase + "index_2" + side;
+		case XR_HAND_JOINT_INDEX_TIP_EXT:
+			return fingerBase + "index" + side + "_end";
+
+			// Middle
+		case XR_HAND_JOINT_MIDDLE_METACARPAL_EXT:
+			return fingerBase + "middle_meta" + side;
+		case XR_HAND_JOINT_MIDDLE_PROXIMAL_EXT:
+			return fingerBase + "middle_0" + side;
+		case XR_HAND_JOINT_MIDDLE_INTERMEDIATE_EXT:
+			return fingerBase + "middle_1" + side;
+		case XR_HAND_JOINT_MIDDLE_DISTAL_EXT:
+			return fingerBase + "middle_2" + side;
+		case XR_HAND_JOINT_MIDDLE_TIP_EXT:
+			return fingerBase + "middle" + side + "_end";
+
+			// Ring
+		case XR_HAND_JOINT_RING_METACARPAL_EXT:
+			return fingerBase + "ring_meta" + side;
+		case XR_HAND_JOINT_RING_PROXIMAL_EXT:
+			return fingerBase + "ring_0" + side;
+		case XR_HAND_JOINT_RING_INTERMEDIATE_EXT:
+			return fingerBase + "ring_1" + side;
+		case XR_HAND_JOINT_RING_DISTAL_EXT:
+			return fingerBase + "ring_2" + side;
+		case XR_HAND_JOINT_RING_TIP_EXT:
+			return fingerBase + "ring" + side + "_end";
+
+			// Pinky
+		case XR_HAND_JOINT_LITTLE_METACARPAL_EXT:
+			return fingerBase + "pinky_meta" + side;
+		case XR_HAND_JOINT_LITTLE_PROXIMAL_EXT:
+			return fingerBase + "pinky_0" + side;
+		case XR_HAND_JOINT_LITTLE_INTERMEDIATE_EXT:
+			return fingerBase + "pinky_1" + side;
+		case XR_HAND_JOINT_LITTLE_DISTAL_EXT:
+			return fingerBase + "pinky_2" + side;
+		case XR_HAND_JOINT_LITTLE_TIP_EXT:
+			return fingerBase + "pinky" + side + "_end";
+
+			// Unmapped
+		default:
+			return "";
+		}
+	}
+
+
 public:
 	// Interactions
 	virtual void CreateActionSet(std::string actionSetName, std::string readableName, int priority) = 0;
@@ -35,6 +146,7 @@ public:
 	virtual void ObjectInteraction() = 0;
 
 	virtual void CreateHandTrackers() = 0;
+	virtual void TrackHands(XrTime predictedTime) = 0;
 
 public:
 	virtual void CreateSession() = 0;

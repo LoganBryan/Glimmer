@@ -17,6 +17,9 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp> 
+
 void XRSession_OpenGL::CreateSession()
 {
 #ifdef _WIN32
@@ -253,64 +256,73 @@ bool XRSession_OpenGL::RenderLayer(RenderLayerInfo& renderlayerInfo)
 		glm::mat4 viewMatrix = XrPoseToGLMMatrix(views[i].pose);
 		glm::mat4 projMatrix = CreateProjectionMatrix(views[i].fov, 0.1f, 100.0f);
 		mRenderer->RenderEye(viewMatrix, projMatrix, fbo, width, height);
-		mRenderer->RenderHands(std::array<XrPosef, 2>{ mHandPose[0], mHandPose[1] }, std::array<XrActionStatePose, 2>{ mHandPoseState[0], mHandPoseState[1] });
-
-		const int parentIndices[XR_HAND_JOINT_COUNT_EXT] =
-		{
-			XR_HAND_JOINT_WRIST_EXT,
-			-1,
-			XR_HAND_JOINT_WRIST_EXT,
-			XR_HAND_JOINT_THUMB_METACARPAL_EXT,
-			XR_HAND_JOINT_THUMB_PROXIMAL_EXT,
-			XR_HAND_JOINT_THUMB_DISTAL_EXT,
-
-			XR_HAND_JOINT_WRIST_EXT,
-			XR_HAND_JOINT_INDEX_METACARPAL_EXT,
-			XR_HAND_JOINT_INDEX_PROXIMAL_EXT,
-			XR_HAND_JOINT_INDEX_INTERMEDIATE_EXT,
-			XR_HAND_JOINT_INDEX_DISTAL_EXT,
-
-			XR_HAND_JOINT_WRIST_EXT,
-			XR_HAND_JOINT_MIDDLE_METACARPAL_EXT,
-			XR_HAND_JOINT_MIDDLE_PROXIMAL_EXT,
-			XR_HAND_JOINT_MIDDLE_INTERMEDIATE_EXT,
-			XR_HAND_JOINT_MIDDLE_DISTAL_EXT,
-
-			XR_HAND_JOINT_WRIST_EXT,
-			XR_HAND_JOINT_RING_METACARPAL_EXT,
-			XR_HAND_JOINT_RING_PROXIMAL_EXT,
-			XR_HAND_JOINT_RING_INTERMEDIATE_EXT,
-			XR_HAND_JOINT_RING_DISTAL_EXT,
-
-			XR_HAND_JOINT_WRIST_EXT,
-			XR_HAND_JOINT_LITTLE_METACARPAL_EXT,
-			XR_HAND_JOINT_LITTLE_PROXIMAL_EXT,
-			XR_HAND_JOINT_LITTLE_INTERMEDIATE_EXT,
-			XR_HAND_JOINT_LITTLE_DISTAL_EXT
-		};
 
 		if (mXrInstanceManager->handTrackingSystemProperties.supportsHandTracking)
 		{
-			for (int j = 0; j < 2; j++)
-			{
-				auto hand = mHands[j];
-				XrVector3f handColor = { 1.0f, 1.0f, 0.0f };
-				for (int k = 0; k < XR_HAND_JOINT_COUNT_EXT; k++)
-				{
-					int parentIDx = parentIndices[k];
-					if (parentIDx < 0 || parentIDx >= XR_HAND_JOINT_COUNT_EXT) continue;
-
-					auto& joint = hand.mJointLocations[k];
-					auto& parent = hand.mJointLocations[parentIDx];
-
-					bool jointValid = (joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
-					bool parentValid = (parent.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
-
-					if (jointValid && parentValid)
-						mRenderer->RenderLine(joint.pose.position, parent.pose.position, handColor);
-				}
-			}
+			auto wristPoses = GetHandTrackingWristPoses();
+			mRenderer->RenderHands(wristPoses, std::array<XrActionStatePose, 2>{mHandPoseState[0], mHandPoseState[1]});
 		}
+		else
+			mRenderer->RenderHands(std::array<XrPosef, 2>{ mHandPose[0], mHandPose[1] }, std::array<XrActionStatePose, 2>{ mHandPoseState[0], mHandPoseState[1] });
+
+
+
+		//const int parentIndices[XR_HAND_JOINT_COUNT_EXT] =
+		//{
+		//	XR_HAND_JOINT_WRIST_EXT,
+		//	-1,
+		//	XR_HAND_JOINT_WRIST_EXT,
+		//	XR_HAND_JOINT_THUMB_METACARPAL_EXT,
+		//	XR_HAND_JOINT_THUMB_PROXIMAL_EXT,
+		//	XR_HAND_JOINT_THUMB_DISTAL_EXT,
+
+		//	XR_HAND_JOINT_WRIST_EXT,
+		//	XR_HAND_JOINT_INDEX_METACARPAL_EXT,
+		//	XR_HAND_JOINT_INDEX_PROXIMAL_EXT,
+		//	XR_HAND_JOINT_INDEX_INTERMEDIATE_EXT,
+		//	XR_HAND_JOINT_INDEX_DISTAL_EXT,
+
+		//	XR_HAND_JOINT_WRIST_EXT,
+		//	XR_HAND_JOINT_MIDDLE_METACARPAL_EXT,
+		//	XR_HAND_JOINT_MIDDLE_PROXIMAL_EXT,
+		//	XR_HAND_JOINT_MIDDLE_INTERMEDIATE_EXT,
+		//	XR_HAND_JOINT_MIDDLE_DISTAL_EXT,
+
+		//	XR_HAND_JOINT_WRIST_EXT,
+		//	XR_HAND_JOINT_RING_METACARPAL_EXT,
+		//	XR_HAND_JOINT_RING_PROXIMAL_EXT,
+		//	XR_HAND_JOINT_RING_INTERMEDIATE_EXT,
+		//	XR_HAND_JOINT_RING_DISTAL_EXT,
+
+		//	XR_HAND_JOINT_WRIST_EXT,
+		//	XR_HAND_JOINT_LITTLE_METACARPAL_EXT,
+		//	XR_HAND_JOINT_LITTLE_PROXIMAL_EXT,
+		//	XR_HAND_JOINT_LITTLE_INTERMEDIATE_EXT,
+		//	XR_HAND_JOINT_LITTLE_DISTAL_EXT
+		//};
+
+		//if (mXrInstanceManager->handTrackingSystemProperties.supportsHandTracking)
+		//{
+		//	for (int j = 0; j < 2; j++)
+		//	{
+		//		auto hand = mHands[j];
+		//		XrVector3f handColor = { 1.0f, 1.0f, 0.0f };
+		//		for (int k = 0; k < XR_HAND_JOINT_COUNT_EXT; k++)
+		//		{
+		//			int parentIDx = parentIndices[k];
+		//			if (parentIDx < 0 || parentIDx >= XR_HAND_JOINT_COUNT_EXT) continue;
+
+		//			auto& joint = hand.mJointLocations[k];
+		//			auto& parent = hand.mJointLocations[parentIDx];
+
+		//			bool jointValid = (joint.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
+		//			bool parentValid = (parent.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT) != 0;
+
+		//			if (jointValid && parentValid)
+		//				mRenderer->RenderLine(joint.pose.position, parent.pose.position, handColor);
+		//		}
+		//	}
+		//}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffers(1, &fbo);
@@ -347,7 +359,14 @@ void XRSession_OpenGL::RenderDesktopWindow()
 	glm::mat4 proj = glm::perspective(glm::radians(60.0f), windowAspect, 0.1f, 100.0f);
 
 	mRenderer->RenderEye(view, proj, 0, windowWidth, windowHeight);
-	mRenderer->RenderHands(std::array<XrPosef, 2>{ mHandPose[0], mHandPose[1] }, std::array<XrActionStatePose, 2>{ mHandPoseState[0], mHandPoseState[1] });
+
+	if (mXrInstanceManager->handTrackingSystemProperties.supportsHandTracking)
+	{
+		auto wristPoses = GetHandTrackingWristPoses();
+		mRenderer->RenderHands(wristPoses, std::array<XrActionStatePose, 2>{mHandPoseState[0], mHandPoseState[1]});
+	}
+	else
+		mRenderer->RenderHands(std::array<XrPosef, 2>{ mHandPose[0], mHandPose[1] }, std::array<XrActionStatePose, 2>{ mHandPoseState[0], mHandPoseState[1] });
 
 	SwapBuffers(m_hdc);
 }
@@ -551,6 +570,8 @@ void XRSession_OpenGL::PollActions(XrTime predictedTime)
 			locations.jointLocations = hand.mJointLocations;
 			mXrInstanceManager->xrLocateHandJointsEXT(hand.mHandTracker, &locateInfo, &locations);
 		}
+
+		TrackHands(predictedTime);
 	}
 }
 
@@ -673,6 +694,64 @@ void XRSession_OpenGL::ObjectInteraction()
 				mRenderer->GetObjects()[mGrabbedObject[i]]->grabbedByHand = -1;
 				mGrabbedObject[i] = -1;
 				mGrabHapticTriggered[i] = false;
+			}
+		}
+	}
+}
+
+void XRSession_OpenGL::TrackHands(XrTime predictedTime)
+{
+	if (!mXrInstanceManager->handTrackingSystemProperties.supportsHandTracking) return;
+
+	for (int handId = 0; handId < 2; handId++)
+	{
+		Hand& hand = mHands[handId];
+		bool isLeft = (handId == 0);
+
+		// Store global transforms
+		std::array<glm::mat4, XR_HAND_JOINT_COUNT_EXT> globalTransforms;
+		for (int jointId = 0; jointId < XR_HAND_JOINT_COUNT_EXT; jointId++)
+		{
+			auto jointLoc = hand.mJointLocations[jointId];
+			if (jointLoc.locationFlags & XR_SPACE_LOCATION_POSITION_VALID_BIT && jointLoc.locationFlags & XR_SPACE_LOCATION_ORIENTATION_VALID_BIT)
+			{
+				globalTransforms[jointId] = XrPoseToGLMMatrixBone(jointLoc.pose);
+			}
+		}
+
+		// Convert to local transforms
+		for (int jointId = 0; jointId < XR_HAND_JOINT_COUNT_EXT; jointId++)
+		{
+			int parentId = HAND_JOINT_PARENT_INDICES[jointId];
+			if (parentId == -1) continue;
+
+			if (parentId >= 0 && parentId < XR_HAND_JOINT_COUNT_EXT)
+			{
+				std::string boneName = GetBoneName(static_cast<XrHandJointEXT>(jointId), isLeft);
+
+				glm::mat4 parentGlobal = globalTransforms[parentId];
+				glm::mat4 childGlobal = globalTransforms[jointId];
+				glm::mat4 fullTransform = glm::inverse(parentGlobal) * childGlobal;
+
+				glm::quat xrRotation = glm::quat_cast(fullTransform);
+
+				if (isLeft)
+					xrRotation = glm::quat(xrRotation.w, -xrRotation.x, xrRotation.y, xrRotation.z);
+				else
+					xrRotation = glm::quat(xrRotation.w, xrRotation.x, xrRotation.y, -xrRotation.z);
+
+				glm::mat4 localTransformFromXR = glm::mat4_cast(xrRotation);
+
+				if (boneName.find("index") != std::string::npos)
+					xrRotation *= glm::angleAxis(glm::radians(-25.0f), glm::vec3(0, 1, 0));
+
+				if (boneName.find("pinky") != std::string::npos)
+					xrRotation *= glm::angleAxis(glm::radians(-10.0f), glm::vec3(0, 1, 0));
+
+				if (!(boneName.find("meta") != std::string::npos))
+				{
+					mRenderer->GetHands()[handId].UpdateJointTransform(boneName, localTransformFromXR);
+				}
 			}
 		}
 	}
