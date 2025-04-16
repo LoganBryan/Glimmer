@@ -64,7 +64,6 @@ void main()
 	V = normalize(-positionEye);
 
 	N = normalize(normalMatrix * aNormal);
-
 	vec3 T = normalize(normalMatrix * aTangent.xyz);
 	vec3 B = normalize(cross(N, T) * aTangent.w);
 

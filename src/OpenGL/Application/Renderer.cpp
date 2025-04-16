@@ -43,11 +43,13 @@ void Renderer::Init()
 	Viewer viewer;
 	//GltfLoader gltf2Object;
 	//GltfLoader gltf3Object;
-	auto gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.gltf");
+	auto gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.glb");
 	auto leftGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_left_model.glb");
 	auto rightGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_right_model.glb");
+	auto duck = std::filesystem::path("assets/models/Duck/duck.glb");
 
 	auto cesiumMan = std::filesystem::path("assets/models/man/CesiumMan.glb");
+	auto sponza = std::filesystem::path("assets/models/sponza/Sponza.gltf");
 	//auto gltfFile = std::filesystem::path("assets/models/flightHelm/FlightHelmet.gltf");
 	glfwSetWindowUserPointer(window, &viewer);
 
@@ -73,20 +75,31 @@ void Renderer::Init()
 	AddObject(gltfFile);
 	AddObject(gltfFile);
 
-	sceneObjects[0]->transform.position = glm::vec3(0.0f, 0.0f, -0.5f);
-	sceneObjects[0]->transform.rotation = glm::quat(1, 0, 0, 0);
-	sceneObjects[0]->transform.scale = glm::vec3(0.25f);
+	glm::vec3 lastPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+	for (int i = 0; i < 3; i++)
+	{
+		sceneObjects[i]->transform.position = lastPosition;
+		sceneObjects[i]->transform.rotation = glm::quat(1, 0, 0, 0);
+		sceneObjects[i]->transform.rotation = glm::vec3(0, 90.0f, 0);
+		sceneObjects[i]->transform.scale = glm::vec3(1.0f);
 
-	sceneObjects[1]->transform.position = glm::vec3(-2.0f, 1.0f, -0.5f);
-	sceneObjects[1]->transform.rotation = glm::quat(1, 0, 0, 0);
-	sceneObjects[1]->transform.scale = glm::vec3(0.5f);
+		lastPosition = glm::vec3(lastPosition.x + 2.0f, 0.0f, 0.0f);
+	}
 
-	sceneObjects[2]->transform.position = glm::vec3(2.0f, 1.0f, -0.5f);
-	sceneObjects[2]->transform.rotation = glm::quat(1, 0, 0, 0);
-	sceneObjects[2]->transform.scale = glm::vec3(0.75f);
+	//sceneObjects[0]->transform.position = glm::vec3(0.0f, -0.5f, -0.5f);
+	//sceneObjects[0]->transform.rotation = glm::quat(1, 0, 0, 0);
+	//sceneObjects[0]->transform.scale = glm::vec3(1.0f);
 
-	handObjects[0].LoadModel(leftGlove, mainShader);
-	handObjects[1].LoadModel(rightGlove, mainShader);
+	//sceneObjects[1]->transform.position = glm::vec3(-2.0f, 1.0f, -0.5f);
+	//sceneObjects[1]->transform.rotation = glm::quat(1, 0, 0, 0);
+	//sceneObjects[1]->transform.scale = glm::vec3(2.0f);
+
+	//sceneObjects[2]->transform.position = glm::vec3(2.0f, 1.0f, -0.5f);
+	//sceneObjects[2]->transform.rotation = glm::quat(1, 0, 0, 0);
+	//sceneObjects[2]->transform.scale = glm::vec3(0.75f);
+
+	//handObjects[0].LoadModel(leftGlove, mainShader);
+	//handObjects[1].LoadModel(rightGlove, mainShader);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -118,6 +131,7 @@ void Renderer::Render(float width, float height)
 
 	mainShader.SetMatrix4("projection", camMatrices.projection);
 	mainShader.SetMatrix4("view", camMatrices.view);
+	mainShader.SetVec3("lightPosition", 10.0f, 10.0f, 10.0f);
 
 	for (auto& obj : sceneObjects)
 	{

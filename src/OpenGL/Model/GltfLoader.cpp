@@ -17,7 +17,7 @@ bool GltfLoader::LoadModel(std::filesystem::path filePath, Shader& shader)
 	auto& defaultMaterial = viewer.materials.emplace_back();
 	defaultMaterial.baseColorFactor = fastgltf::math::fvec4(1.0f);
 	defaultMaterial.metallicFactor = 0.0f;
-	defaultMaterial.roughnessFactor = 0.0f;
+	defaultMaterial.roughnessFactor = 1.0f;
 	defaultMaterial.alphaCutoff = 0.0f;
 	defaultMaterial.flags = 0;
 
@@ -503,8 +503,9 @@ bool GltfLoader::LoadMaterial(fastgltf::Material& material)
 	uniforms.alphaCutoff = material.alphaCutoff;
 
 	uniforms.baseColorFactor = material.pbrData.baseColorFactor;
-	//uniforms.metallicFactor = material.pbrData.metallicFactor;
-	//uniforms.roughnessFactor = material.pbrData.roughnessFactor;
+	uniforms.metallicFactor = material.pbrData.metallicFactor;
+	uniforms.roughnessFactor = material.pbrData.roughnessFactor; 
+
 	if (material.pbrData.baseColorTexture.has_value())
 	{
 		uniforms.flags |= MaterialUniformFlags::HasBaseColorTexture;
@@ -808,7 +809,7 @@ void GltfLoader::DrawMesh(std::size_t meshIndex)
 			{
 				auto& transform = gltfMaterial.pbrData.baseColorTexture->transform;
 				glUniform2f(viewer.uvOffsetUniform, transform->uvOffset[0], transform->uvOffset[1]);
-				glUniform2f(viewer.uvScaleUniform, transform->uvOffset[0], transform->uvScale[1]);
+				glUniform2f(viewer.uvScaleUniform, transform->uvScale[0], transform->uvScale[1]);
 				glUniform1f(viewer.uvRotationUniform, static_cast<float>(transform->rotation));
 			}
 		}
