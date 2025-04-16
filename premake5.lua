@@ -10,9 +10,11 @@ IncludeDirs["GLFW"] = "thirdparty/GLFW/include"
 IncludeDirs["GLAD"] = "thirdparty/GLAD/include"
 IncludeDirs["STB"] = "thirdparty/stb"
 IncludeDirs["GLM"] = "thirdparty/glm"
+IncludeDirs["GL"] = "thirdparty/GL"
 IncludeDirs["FastGLTF"] = "thirdparty/fastgltf"
 IncludeDirs["simdJSON"] = "thirdparty/simdjson"
 IncludeDirs["imGUI"] = "thirdparty/imgui"
+
 
 LibraryDirs = {}
 LibraryDirs["GLFW"] = "thirdparty/GLFW/lib-vc2022"
@@ -46,10 +48,6 @@ project "Glimmer"
 
     vpaths
     {
-        ["Headers/Application"] = {"src/Application/**.h"},
-        ["Headers/Model"] = {"src/Model/**.h"},
-        ["Sources/Application"] = {"src/Application/**.cpp"},
-        ["Sources/Model"] = {"src/Model/**.cpp"},
         ["Shaders"] = {"src/shaders/**"},
         ["FastGLTF"] = {"src/fastgltf/**"},
         ["simdJSON"] = {"src/simdjson/**"}, 
@@ -66,6 +64,7 @@ project "Glimmer"
         "%{IncludeDirs.GLAD}",
         "%{IncludeDirs.STB}",
         "%{IncludeDirs.GLM}",
+        "%{IncludeDirs.GL}",
         "%{IncludeDirs.FastGLTF}",
         "%{IncludeDirs.simdJSON}",
         "%{IncludeDirs.imGUI}"
@@ -75,10 +74,11 @@ project "Glimmer"
     {
         "%{LibraryDirs.GLFW}"
     }
-
+    
     links
     {
-        "glfw3.lib"
+        "glfw3.lib",
+        "opengl32.lib"
     }
 
     filter "system:windows"
@@ -86,7 +86,8 @@ project "Glimmer"
         buildoptions {"/MP"}
         defines
         {
-            "GLIMMER_PLATFORM_WINDOWS"
+            "GLIMMER_PLATFORM_WINDOWS",
+            "XR_USE_GRAPHICS_API_OPENGL"
         }
     
     filter "configurations:Debug"
@@ -100,7 +101,7 @@ project "Glimmer"
         }
 
     filter "configurations:Release"
-        defines { "NDEBUG" }
+        defines { "NDEBUG", "_ITERATOR_DEBUG_LEVEL=0" }
         runtime "Release"
         optimize "on"
         buildoptions {"/Ob0"}
