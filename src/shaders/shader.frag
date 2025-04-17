@@ -23,11 +23,14 @@ const uint HAS_OCCLUSION = 16;
 
 const float PI = 3.1415926;
 
+uniform vec3 sunDirection;
+uniform float sunIntensity;
+uniform float environmentIntensity;
+
 // TODO: these are temp and need to be set as uniforms!
-const float exposure = 0.8;
-const vec3 lightColor = vec3(1.0);
-const float lightIntensity = 5.0;
-const float environmentIntensity = 0.2;
+const float exposure = 0.3;
+const vec3 ambientColor = vec3(0.2);
+const vec3 sunColor = vec3(1.0, 0.9, 0.8);
 
 layout(location = 0) uniform sampler2D albedoTexture;
 layout(binding = 0, std140) uniform MaterialUniforms {
@@ -294,6 +297,15 @@ void main()
 		lighting += CalculateLighting(lights[i], viewNormal, V, baseColor, roughness, metallic);
 	}
 
+	Light sunLight;
+	sunLight.type = 0u;
+	sunLight.color = vec4(sunColor, sunIntensity);
+	sunLight.direction = vec4(sunDirection, 0.0);
+
+	vec3 sunRadiance = sunColor * sunIntensity;
+	vec3 sunContribution = CalcDirectionalLight(sunLight, viewNormal, V, baseColor, roughness * 0.5 + 0.5, metallic); // Roughness changes causes it to be less sharp decreasing the specular highlight
+	lighting += sunRadiance * sunContribution;
+
 	// Fresnel
 	float NdotV = max(dot(viewNormal, V), 0.0);
 	float reflectance = mix(0.05, 0.17, roughness);
@@ -303,19 +315,21 @@ void main()
 
 	// Simplified IBL
 	vec3 R = reflect(-V, viewNormal);
-	vec3 reflection = textureLod(skybox, R, roughness * 4.0).rgb * environmentIntensity;
+	vec3 reflection = textureLod(skybox, R, roughness * 4.0).rgb;
 	lighting += reflection * F * ambientOcclusion;
 
 	// Ambient
-	vec3 irradiance = texture(skybox, viewNormal).rgb * environmentIntensity;
-	vec3 ambient = (kD * irradiance + reflection * F) * environmentIntensity * ambientOcclusion;
+	vec3 irradiance = texture(skybox, viewNormal).rgb;
+	vec3 indirectLighting = (kD * irradiance + reflection * F) * environmentIntensity;
+	vec3 skyboxAmbient = indirectLighting * ambientOcclusion;
+	vec3 staticAmbient = ambientColor * 0.1; // Ambient for unlit sections
+	vec3 ambient = skyboxAmbient + staticAmbient;
 	ambient *= mix(1.0, 2.5, 1.0 - metallic); // Ambient boost for non metal
 
 	lighting += ambient;
 
 	// Final Color
 	vec3 finalColor = lighting * exposure; 
-	finalColor = lighting; 
 	finalColor = ACESFilm(finalColor);
 	finalColor = pow(finalColor, vec3(1.0/2.2)); // Gamma correct
 	finalColor += emissiveColor.rgb;

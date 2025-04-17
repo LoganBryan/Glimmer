@@ -159,9 +159,33 @@ void Renderer::Render(float width, float height)
 	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
 	glStencilMask(0xFF); // Enable writing to stencil buffer
 
+	// Update sun
+	const float dT = 0.016f;
+	timeOfDay += dT * 0.01;
+
+	if (timeOfDay == 1.0f)
+		timeOfDay = 0.0f;
+
+	//timeOfDay = 0.5f;
+
+	float sunElevation = (timeOfDay * 2.0f - 0.5f) * glm::pi<float>();
+	float sunHeight = glm::sin(sunElevation);
+
+	glm::vec3 sunDir = glm::vec3(0.0f, glm::sin(sunElevation), glm::cos(sunElevation));
+	glm::vec3 sunDirView = glm::mat3(viewMatrix) * sunDir;
+
+	float sunIntensity = glm::smoothstep(-0.3f, 0.5f, sunHeight);
+	sunIntensity = glm::clamp(sunIntensity, 0.0f, 1.0f);
+
+	float environmentIntensity = glm::smoothstep(-0.7f, 0.7f, sunHeight);
+	environmentIntensity = glm::mix(0.02f, 1.0f, environmentIntensity);
+
+	mainShader.SetVec3("sunDirection", sunDirView);
+	mainShader.SetFloat("sunIntensity", sunIntensity);
+	mainShader.SetFloat("environmentIntensity", environmentIntensity);
+
 	mainShader.SetMatrix4("projection", camMatrices.projection);
 	mainShader.SetMatrix4("view", camMatrices.view);
-	//mainShader.SetVec3("lightPosition", 10.0f, 10.0f, 10.0f);
 
 	for (auto& obj : sceneObjects)
 	{

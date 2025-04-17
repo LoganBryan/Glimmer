@@ -78,6 +78,8 @@ private:
 	GLuint lightCount{ 0 };
 
 	Shader mainShader;
+
+	float timeOfDay = 0.1f;
 };
 
 #endif // !RENDERER_H
