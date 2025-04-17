@@ -15,20 +15,18 @@ uniform mat4 projection;
 
 uniform bool uHasSkinning;
 
-uniform vec3 lightPosition;
-
 layout(std140, binding = 1) uniform JointMatrices
 {
 	mat4 jointMatrices[MAX_JOINTS];
 };
 
+out vec3 fragPosView;
 out vec2 texCoord;
 out vec3 normal;
 out vec4 tangent;
 
 out mat3 TBN;
 out vec3 N; // Normal in view space 
-out vec3 L; // Light dir in view space 
 out vec3 V; // View dir in view space 
 
 void main()
@@ -57,9 +55,6 @@ void main()
 	// View-space normal
 	mat3 normalMatrix = transpose(inverse(mat3(model * skinMatrix)));
 
-	// View-space light dir
-	L = normalize(lightPosition - positionEye);
-
 	// View vector
 	V = normalize(-positionEye);
 
@@ -81,5 +76,6 @@ void main()
 	else
 		worldPosition = vec4(aVertex, 1.0);
 
+	fragPosView = positionEye;
 	gl_Position = projection * view * model * worldPosition;
 }

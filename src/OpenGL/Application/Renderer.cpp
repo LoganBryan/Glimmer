@@ -27,6 +27,8 @@ Renderer::~Renderer()
 	skyboxTexture = 0;
 	glDeleteVertexArrays(1, &skyboxVAO);
 	glDeleteBuffers(1, &skyboxVBO);
+
+	glDeleteBuffers(1, &lightSSBO);
 }
 
 void Renderer::Init()
@@ -66,6 +68,11 @@ void Renderer::Init()
 	AddObject(gltfFile);
 	AddObject(gltfFile);
 	AddObject(gltfFile);
+	AddObject(gltfFile);
+	AddObject(gltfFile);
+	AddObject(gltfFile);
+	AddObject(gltfFile);
+	AddObject(gltfFile);
 
 	glm::vec3 lastPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 	for (auto& obj : sceneObjects)
@@ -76,6 +83,38 @@ void Renderer::Init()
 
 		lastPosition = glm::vec3(lastPosition.x + 2.0f, 0.0f, 0.0f);
 	}
+
+	// Light objects
+	glGenBuffers(1, &lightSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
+	GLsizei bufferSize = sizeof(GLuint) + 12 + (sizeof(LightData) * maxLights);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lightSSBO);
+
+	LightData pointLight = {};
+	pointLight.type = 1;
+	pointLight.color = glm::vec4(1.0f, 0.0f, 0.0f, 5.0f);
+	pointLight.position = glm::vec4(10.0f, 4.0f, 0.0f, 1.0f);
+	pointLight.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 0.0f);
+
+	LightData spotLight = {};
+	spotLight.type = 2;
+	spotLight.color = glm::vec4(0.0f, 0.0f, 1.0f, 30.0f);
+	spotLight.position = glm::vec4(5.0f, 4.0f, 0.0f, 1.0f);
+	spotLight.direction = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
+	spotLight.cutOff = glm::vec4(glm::cos(glm::radians(5.0f)), glm::cos(glm::radians(40.0f)), 0.0f, 0.0f);
+	spotLight.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 0.0f);
+
+	LightData areaLight = {};
+	areaLight.type = 3;
+	areaLight.color = glm::vec4(0.0f, 1.0f, 0.0f, 10.0f);
+	areaLight.position = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
+	areaLight.axisU = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	areaLight.axisV = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+
+	lightsWorld.push_back(pointLight);
+	lightsWorld.push_back(spotLight);
+	lightsWorld.push_back(areaLight);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -99,6 +138,21 @@ void Renderer::Render(float width, float height)
 
 	glm::mat4 model = glm::mat4(1.0f);
 	CameraMatrices camMatrices = Camera::GetInstance()->GetMVP(aspect, nearPlane, farPlane, model);
+	glm::mat4 viewMatrix = Camera::GetInstance()->GetViewMatrix();
+
+	// Lights
+	// Transform world space to view space
+	lightCount = static_cast<GLuint>(lightsWorld.size());
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &lightCount);
+
+	lightsView = lightsWorld;
+	for (size_t i = 0; i < lightsView.size(); i++)
+	{
+		lightsView[i].position = viewMatrix * lightsWorld[i].position;
+		lightsView[i].direction = viewMatrix * glm::vec4(glm::vec3(lightsWorld[i].direction), 0.0f);
+	}
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, sizeof(LightData) * lightCount, lightsView.data());
 
 	// gLTF object
 	mainShader.Use();
@@ -107,7 +161,7 @@ void Renderer::Render(float width, float height)
 
 	mainShader.SetMatrix4("projection", camMatrices.projection);
 	mainShader.SetMatrix4("view", camMatrices.view);
-	mainShader.SetVec3("lightPosition", 10.0f, 10.0f, 10.0f);
+	//mainShader.SetVec3("lightPosition", 10.0f, 10.0f, 10.0f);
 
 	for (auto& obj : sceneObjects)
 	{
@@ -133,7 +187,7 @@ void Renderer::Render(float width, float height)
 	glDepthFunc(GL_LESS);
 
 	GUIHandler* gui = GUIHandler::GetInstance();
-	
+
 	gui->NewFrame();
 	gui->BeginFrame("Test Window", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking, ImVec2(854, 480));
 	ImGui::Text("Test!");

@@ -2,8 +2,9 @@
 
 in mat3 TBN;
 in vec3 N; // Normal in view space 
-in vec3 L; // Light dir in view space 
+//in vec3 L; // Light dir in view space 
 in vec3 V; // View dir in view space 
+in vec3 fragPosView;
 in vec2 texCoord;
 in vec3 normal;
 in vec4 tangent;
@@ -28,7 +29,6 @@ const vec3 lightColor = vec3(1.0);
 const float lightIntensity = 5.0;
 const float environmentIntensity = 0.2;
 
-
 layout(location = 0) uniform sampler2D albedoTexture;
 layout(binding = 0, std140) uniform MaterialUniforms {
 	vec4 baseColorFactor;
@@ -42,8 +42,27 @@ layout(location = 1) uniform sampler2D metallicRoughnessTexture;
 layout(location = 2) uniform sampler2D normalTexture;
 layout(location = 3) uniform sampler2D emissiveTexture;
 layout(location = 4) uniform sampler2D occlusionTexture;
-
 layout(location = 5) uniform samplerCube skybox;
+
+struct Light
+{
+	uint type; // 0 - Dir, 1 - Point, 2 - Spot, 3 - Area
+	vec3 _padding;
+
+	vec4 color; // w - intensity
+	vec4 position; // point/ spot/ area 
+	vec4 direction; // dir/ spot
+	vec4 cutoff; // spot. x - inner, y - outer 
+	vec4 attenuation; // x - constant, y - linear, z - quadratic
+	vec4 axisU; // area lights
+	vec4 axisV; // area lights
+};
+
+layout(binding = 0, std430) buffer LightBuffer 
+{
+	uint lightCount;
+	Light lights[];
+};
 
 float rand(vec2 co) 
 {
@@ -88,6 +107,135 @@ vec3 ACESFilm(vec3 x)
 	float d = 0.59;
 	float e = 0.14;
 	return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0.0, 1.0);
+}
+
+// Lighting calculations
+vec3 CalcDirectionalLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness, float metallic)
+{
+	vec3 L = normalize(light.direction.xyz);
+	vec3 H = normalize(L + V);
+	float NDF = DistributionGGX(N, H, roughness);
+	float G = GeometrySmith(N, V, L, roughness);
+
+	float reflectance = mix(0.05, 0.17, roughness);
+	vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
+	vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+	vec3 numerator = NDF * G * F;
+	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+	vec3 specular = numerator / max(denominator, 0.001);
+	vec3 kD = (1.0 - F) * (1.0 - metallic);
+
+	float NdotL = max(dot(N, L), 0.0);
+	vec3 radiance = light.color.rgb * light.color.w;
+
+	vec3 diffuse = kD * baseColor.rgb / PI;
+	return (diffuse + specular) * radiance * NdotL;
+}
+
+vec3 CalcPointLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness, float metallic)
+{
+	vec3 L = normalize(light.position.xyz - fragPosView);
+	float dist = length(light.position.xyz - fragPosView);
+	float atten = 1.0 / (light.attenuation.x + light.attenuation.y * dist + light.attenuation.z * dist * dist);
+
+	vec3 H = normalize(L + V);
+	float NDF = DistributionGGX(N, H, roughness);
+	float G = GeometrySmith(N, V, L, roughness);
+
+	float reflectance = mix(0.05, 0.17, roughness);
+	vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
+	vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+	vec3 numerator = NDF * G * F;
+	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+	vec3 specular = numerator / max(denominator, 0.001);
+	vec3 kD = (1.0 - F) * (1.0 - metallic);
+
+	vec3 diffuse = kD * baseColor.rgb / PI;
+
+	vec3 radiance = light.color.rgb * light.color.w * atten;
+	return (diffuse + specular) * radiance * max(dot(N, L), 0.0);
+}
+
+vec3 CalcSpotLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness, float metallic)
+{
+	vec3 L = normalize(light.position.xyz - fragPosView);
+	float theta = dot(L, normalize(-light.direction.xyz));
+	float epsilon = light.cutoff.x - light.cutoff.y;
+	float intensity = clamp((theta - light.cutoff.y) / epsilon, 0.0, 1.0);
+
+	float dist = length(light.position.xyz - fragPosView);
+	float atten = 1.0 / (light.attenuation.x + light.attenuation.y * dist + light.attenuation.z * dist * dist);
+
+	vec3 H = normalize(L + V);
+	float NDF = DistributionGGX(N, H, roughness);
+	float G = GeometrySmith(N, V, L, roughness);
+
+	float reflectance = mix(0.05, 0.17, roughness);
+	vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
+	vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+	vec3 numerator = NDF * G * F;
+	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+	vec3 specular = numerator / max(denominator, 0.001);
+	vec3 kD = (1.0 - F) * (1.0 - metallic);
+
+	vec3 diffuse = kD * baseColor.rgb / PI;
+
+	vec3 radiance = light.color.rgb * light.color.w * atten * intensity;
+	return (diffuse + specular) * radiance * max(dot(N, L), 0.0);
+}
+
+vec3 CalcAreaLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness, float metallic)
+{
+	int samples = 4;
+	vec3 result = vec3(0.0);
+
+	for (int u = -1; u <= 1; u += 2)
+	{
+		for (int v = -1; v <= 1; v += 2)
+		{
+			vec3 samplePos = light.position.xyz + u * light.axisU.xyz + v * light.axisV.xyz;
+			vec3 L = normalize(samplePos - fragPosView);
+			float dist = length(samplePos - fragPosView);
+			float atten = 1.0 / (dist * dist + 0.001);
+
+			vec3 H = normalize(L + V);
+			float NDF = DistributionGGX(N, H, roughness);
+			float G = GeometrySmith(N, V, L, roughness);
+
+			float reflectance = mix(0.05, 0.17, roughness);
+			vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
+			vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+
+			vec3 numerator = NDF * G * F;
+			float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+			vec3 specular = numerator / max(denominator, 0.001);
+			vec3 kD = (1.0 - F) * (1.0 - metallic);
+
+			vec3 diffuse = kD * baseColor.rgb / PI;
+
+			result += (diffuse + specular) * (light.color.rgb * light.color.w * atten) * max(dot(N, L), 0.0);
+		}
+	}
+	return result / float(samples);
+}
+
+vec3 CalculateLighting(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness, float metallic)
+{
+	vec3 result = vec3(0.0);
+	
+	if (light.type == 0u)
+		result = CalcDirectionalLight(light, N, V, baseColor, roughness, metallic);
+	else if (light.type == 1u)
+		result = CalcPointLight(light, N, V, baseColor, roughness, metallic);
+	else if (light.type == 2u)
+		result = CalcSpotLight(light, N, V, baseColor, roughness, metallic);
+	else if (light.type == 3u)
+		result = CalcAreaLight(light, N, V, baseColor, roughness, metallic);
+
+	return result;
 }
 
 void main()
@@ -140,37 +288,18 @@ void main()
 		ambientOcclusion = texture(occlusionTexture, transformUV(texCoord)).r;
 	}
 
+	vec3 lighting = vec3(0.0);
+	for (uint i = 0u; i < lightCount; i++)
+	{
+		lighting += CalculateLighting(lights[i], viewNormal, V, baseColor, roughness, metallic);
+	}
+
 	// Fresnel
+	float NdotV = max(dot(viewNormal, V), 0.0);
 	float reflectance = mix(0.05, 0.17, roughness);
 	vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
-	vec3 H = normalize(L + V);
-	vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
-
-	// Cook-Torrance BRDF
-	float NDF = DistributionGGX(viewNormal, H, roughness);
-	float G = GeometrySmith(viewNormal, V, L, roughness);
-	vec3 numerator = NDF * G * F;
-	float denominator = 4.0 * max(dot(viewNormal, V), 0.0) * max(dot(viewNormal, L), 0.0);
-	vec3 specular = numerator / max(denominator, 0.001);
-
-	// Add energy compensation for specular
-	vec3 specularEnergyComp = 1.0 + F * (1.0 / max(NDF, 0.001) - 1.0);
-	specular *= specularEnergyComp;
-
-	// Energy Compensation
-	float E = 1.0 / (roughness*roughness + 0.1);
-	specular *= 1.0 + F * (E - 1.0);
-
-	// Distance-based attenuation
-	float dist = length(L);
-	float attenuation = 1.0 / (dist * dist + 0.0001);
-	vec3 radiance = lightColor * lightIntensity * attenuation;
-
-	// Diffuse
+	vec3 F = F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);
 	vec3 kD = (1.0 - F) * (1.0 - metallic);
-	vec3 diffuse = kD * baseColor.rgb / PI;
-
-	vec3 lighting = (diffuse + specular) * radiance * max(dot(viewNormal, L), 0.0);
 
 	// Simplified IBL
 	vec3 R = reflect(-V, viewNormal);
@@ -186,6 +315,7 @@ void main()
 
 	// Final Color
 	vec3 finalColor = lighting * exposure; 
+	finalColor = lighting; 
 	finalColor = ACESFilm(finalColor);
 	finalColor = pow(finalColor, vec3(1.0/2.2)); // Gamma correct
 	finalColor += emissiveColor.rgb;
