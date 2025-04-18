@@ -163,8 +163,7 @@ void Renderer::Render(float width, float height)
 	const float dT = 0.016f;
 	timeOfDay += dT * 0.01;
 
-	if (timeOfDay == 1.0f)
-		timeOfDay = 0.0f;
+	timeOfDay = glm::fract(timeOfDay);
 
 	//timeOfDay = 0.5f;
 
@@ -174,10 +173,10 @@ void Renderer::Render(float width, float height)
 	glm::vec3 sunDir = glm::vec3(0.0f, glm::sin(sunElevation), glm::cos(sunElevation));
 	glm::vec3 sunDirView = glm::mat3(viewMatrix) * sunDir;
 
-	float sunIntensity = glm::smoothstep(-0.3f, 0.5f, sunHeight);
+	float sunIntensity = glm::smoothstep(-0.5f, 0.5f, sunHeight);
 	sunIntensity = glm::clamp(sunIntensity, 0.0f, 1.0f);
 
-	float environmentIntensity = glm::smoothstep(-0.7f, 0.7f, sunHeight);
+	float environmentIntensity = glm::smoothstep(-0.866f, 0.866f, sunHeight);
 	environmentIntensity = glm::mix(0.02f, 1.0f, environmentIntensity);
 
 	mainShader.SetVec3("sunDirection", sunDirView);

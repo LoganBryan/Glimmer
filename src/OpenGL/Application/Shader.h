@@ -5,6 +5,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <unordered_map>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <stdio.h>
@@ -18,18 +19,32 @@ class Shader
 {
 public:
 	Shader();
+	~Shader()
+	{
+		Delete();
+	}
+	Shader(const Shader&) = delete;
+	Shader& operator=(const Shader&) = delete;
+
 	void Load(const char* vertexPath, const char* fragmentPath);
 
 	inline void Use() const { glUseProgram(programID); }
 	inline void End() const { glUseProgram(0); }
 
-	inline void Delete() const { glDeleteProgram(programID); }
+	inline void Delete() 
+	{ 
+		if (programID != 0)
+		{
+			glDeleteProgram(programID);
+			programID = 0;
+		}
+	}
 
-	inline void SetBool(const std::string& name, bool value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
-	inline void SetInt(const std::string& name, int value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
-	inline void SetFloat(const std::string& name, float value) const { glUniform1f(glGetUniformLocation(programID, name.c_str()), (int)(value)); }
+	inline void SetBool(const std::string& name, bool value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), value); }
+	inline void SetInt(const std::string& name, int value) const { glUniform1i(glGetUniformLocation(programID, name.c_str()), value); }
+	inline void SetFloat(const std::string& name, float value) const { glUniform1f(glGetUniformLocation(programID, name.c_str()), (float)(value)); }
 
-	inline void SetVec3(const std::string& name, glm::vec3& value) const { glUniform3fv(glGetUniformLocation(programID, name.c_str()), 1, &value[0]); }
+	inline void SetVec3(const std::string& name, const glm::vec3& value) const { glUniform3fv(glGetUniformLocation(programID, name.c_str()), 1, &value[0]); }
 	inline void SetVec3(const std::string& name, float x, float y, float z) const { glUniform3f(glGetUniformLocation(programID, name.c_str()), x, y, z); }
 
 	inline void SetMatrix4(const std::string& name, glm::mat4& value) const {glUniformMatrix4fv(glGetUniformLocation(programID, name.c_str()), 1, GL_FALSE, &value[0][0]);}
@@ -46,6 +61,16 @@ public:
 private:
 	void checkShaderCompilation(unsigned int& shader, std::string shaderType);
 	void checkProgramCompilation(unsigned int& program);
+
+	std::unordered_map<std::string, GLint> uniformLocationCache;
+	inline GLint GetUniformLocation(const std::string& name)
+	{
+		if (uniformLocationCache.find(name) != uniformLocationCache.end())
+			return uniformLocationCache[name];
+		GLint location = glGetUniformLocation(programID, name.c_str());
+		uniformLocationCache[name] = location;
+		return location;
+	}
 
 private:
 	unsigned int programID;
