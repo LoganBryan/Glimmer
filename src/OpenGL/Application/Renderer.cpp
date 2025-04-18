@@ -36,6 +36,7 @@ void Renderer::Init()
 	// Init shaders, load models, setup buffers etc
 	skyboxShader.Load("shaders/skybox.vert", "shaders/skybox.frag");
 	mainShader.Load("shaders/shader.vert", "shaders/shader.frag");
+	shadowShader.Load("shaders/shadow.vert", "shaders/shadow.frag");
 
 	// Load skybox textures
 	skyboxTexture = Utils::GenerateCubemapCompressed(skyboxFaces);
@@ -46,6 +47,7 @@ void Renderer::Init()
 	auto leftGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_left_model.glb");
 	auto rightGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_right_model.glb");
 	auto duck = std::filesystem::path("assets/models/Duck/duck.glb");
+	auto cube = std::filesystem::path("assets/models/cube/Cube.gltf");
 	auto cesiumMan = std::filesystem::path("assets/models/man/CesiumMan.glb");
 	auto sponza = std::filesystem::path("assets/models/sponza/Sponza.gltf");
 
@@ -65,6 +67,9 @@ void Renderer::Init()
 
 	// TODO: Should probably seperate scene setup from renderer, and then extend addobject function (to add a unique id, DisplayName, set transform matrix etc)
 	// Loading should also not be handled inside of renderer!
+	mainShader.Use();
+	mainShader.SetInt("shadowMap", 6);
+
 	AddObject(gltfFile);
 	AddObject(gltfFile);
 	AddObject(gltfFile);
@@ -81,7 +86,7 @@ void Renderer::Init()
 		obj->transform.rotation = glm::quat(1, 0, 0, 0);
 		obj->transform.scale = glm::vec3(1.0f);
 
-		lastPosition = glm::vec3(lastPosition.x + 2.0f, 0.0f, 0.0f);
+		lastPosition = glm::vec3(lastPosition.x + 0.5f, lastPosition.y - 2.0f, 0.0f);
 	}
 
 	// Light objects
@@ -112,9 +117,26 @@ void Renderer::Init()
 	areaLight.axisU = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
 	areaLight.axisV = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
 
-	lightsWorld.push_back(pointLight);
-	lightsWorld.push_back(spotLight);
-	lightsWorld.push_back(areaLight);
+	//lightsWorld.push_back(pointLight);
+	//lightsWorld.push_back(spotLight);
+	//lightsWorld.push_back(areaLight);
+
+	// Setup Depth Map for shadows
+	glGenFramebuffers(1, &depthMapFBO);
+
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowWidth, shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -154,42 +176,87 @@ void Renderer::Render(float width, float height)
 	}
 	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, sizeof(LightData) * lightCount, lightsView.data());
 
-	// gLTF object
-	mainShader.Use();
-	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
-	glStencilMask(0xFF); // Enable writing to stencil buffer
-
 	// Update sun
-	const float dT = 0.016f;
-	timeOfDay += dT * 0.01;
+	//const float dT = 0.016f;
+	//timeOfDay += dT * 0.01;
 
-	if (timeOfDay == 1.0f)
-		timeOfDay = 0.0f;
+	//timeOfDay = glm::fract(timeOfDay);
 
-	//timeOfDay = 0.5f;
-
+	// TODO: fit shadows to view frustum (using something like cascaded shadow mapping)
 	float sunElevation = (timeOfDay * 2.0f - 0.5f) * glm::pi<float>();
+	float sunAzimuth = glm::radians(setSunAzimuth);
 	float sunHeight = glm::sin(sunElevation);
 
-	glm::vec3 sunDir = glm::vec3(0.0f, glm::sin(sunElevation), glm::cos(sunElevation));
-	glm::vec3 sunDirView = glm::mat3(viewMatrix) * sunDir;
+	float sinElev = glm::sin(sunElevation), cosElev = glm::cos(sunElevation);
+	float sinAzi = glm::sin(sunAzimuth), cosAzi = glm::cos(sunAzimuth);
 
-	float sunIntensity = glm::smoothstep(-0.3f, 0.5f, sunHeight);
+	glm::vec3 sunDirWorld = glm::normalize(glm::vec3(cosAzi * cosElev, sinElev, sinAzi * cosElev));
+
+	glm::vec3 sceneCenter = ComputeSceneCentroid(sceneObjects);
+	float sceneRadi = ComputeSceneRadius(sceneObjects, sceneCenter);
+	const float sunDist = 50.0f;
+
+	glm::vec3 sunDirView = glm::mat3(viewMatrix) * sunDirWorld;
+
+	float sunIntensity = glm::smoothstep(-0.5f, 0.5f, sunHeight);
 	sunIntensity = glm::clamp(sunIntensity, 0.0f, 1.0f);
 
-	float environmentIntensity = glm::smoothstep(-0.7f, 0.7f, sunHeight);
+	float environmentIntensity = glm::smoothstep(-0.866f, 0.866f, sunHeight);	
 	environmentIntensity = glm::mix(0.02f, 1.0f, environmentIntensity);
+
+	glm::vec3 worldUp(0, 1, 0);
+	float pad = 1.5f;
+	glm::vec3 ref = (abs(dot(sunDirWorld, worldUp)) > 0.99f) ? glm::vec3(1, 0, 0) : worldUp;
+	glm::vec3 right = glm::normalize(cross(ref, sunDirWorld));
+	glm::vec3 upVec = glm::cross(sunDirWorld, right);
+	glm::vec3 sunPos = -sunDirWorld * sunDist;
+
+	glm::mat4 lightView = glm::lookAt(sceneCenter - sunDirWorld * sunDist, sceneCenter, upVec);
+	glm::mat4 lightProj = glm::ortho(-sceneRadi*pad, sceneRadi*pad, -sceneRadi*pad, sceneRadi*pad, nearPlane, farPlane);
+
+	glm::mat4 lightSpace = lightProj * lightView;
+
+	shadowShader.Use();
+	shadowShader.SetMatrix4("lightSpaceMatrix", lightSpace);
+
+	glViewport(0, 0, shadowWidth, shadowHeight);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+	glCullFace(GL_FRONT);
+	for (auto& obj : sceneObjects)
+	{
+		model = obj->transform.GetMatrix();
+
+		obj->model.DrawModel(shadowShader, model);
+		//obj->model.UpdateSkins(model);
+	}
+	glCullFace(GL_BACK);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glViewport(0, 0, width, height);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// gLTF object
+	mainShader.Use();
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+
+	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
+	glStencilMask(0xFF); // Enable writing to stencil buffer
 
 	mainShader.SetVec3("sunDirection", sunDirView);
 	mainShader.SetFloat("sunIntensity", sunIntensity);
 	mainShader.SetFloat("environmentIntensity", environmentIntensity);
+
+	mainShader.SetMatrix4("lightSpaceMatrix", lightSpace);
 
 	mainShader.SetMatrix4("projection", camMatrices.projection);
 	mainShader.SetMatrix4("view", camMatrices.view);
 
 	for (auto& obj : sceneObjects)
 	{
-		glm::mat4 model = obj->transform.GetMatrix();
+		model = obj->transform.GetMatrix();
 
 		obj->model.DrawModel(mainShader, model);
 		obj->model.UpdateSkins(model);
@@ -215,6 +282,8 @@ void Renderer::Render(float width, float height)
 	gui->NewFrame();
 	gui->BeginFrame("Test Window", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking, ImVec2(854, 480));
 	ImGui::Text("Test!");
+	ImGui::SliderFloat("Time of Day", &timeOfDay, 0.0f, 1.0f);
+	ImGui::SliderFloat("Sun Azimuth", &setSunAzimuth, -180.0f, 180.0f);
 	gui->EndFrame();
 
 	gui->Render();

@@ -12,6 +12,7 @@ layout(location = 5) in vec4 aWeights;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 lightSpaceMatrix;
 
 uniform bool uHasSkinning;
 
@@ -24,6 +25,7 @@ out vec3 fragPosView;
 out vec2 texCoord;
 out vec3 normal;
 out vec4 tangent;
+out vec4 FragPosLightSpace;
 
 out mat3 TBN;
 out vec3 N; // Normal in view space 
@@ -44,7 +46,7 @@ void main()
 			aWeights.w * jointMatrices[aJoints.w];
 	}
 
-	vec4 worldPosition ;
+	//vec4 worldPosition;
 
 	// Modelview matrix
 	mat4 mvm = view * model;
@@ -70,11 +72,15 @@ void main()
 	tangent = vec4(mat3(transpose(inverse(model))) * vec3(aTangent.xyz), 1.0);
 
 	mat4 MVP = projection * view * model;
+//
+//	if (useSkinning)
+//		worldPosition = skinMatrix * vec4(aVertex, 1.0);
+//	else
+//		worldPosition = vec4(aVertex, 1.0);
 
-	if (useSkinning)
-		worldPosition = skinMatrix * vec4(aVertex, 1.0);
-	else
-		worldPosition = vec4(aVertex, 1.0);
+	vec4 worldPosition = useSkinning ? skinMatrix * vec4(aVertex, 1.0) : vec4(aVertex, 1.0);
+
+	FragPosLightSpace = lightSpaceMatrix * model * worldPosition;
 
 	fragPosView = positionEye;
 	gl_Position = projection * view * model * worldPosition;

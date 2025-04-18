@@ -72,6 +72,11 @@ private:
 	unsigned int skyboxTexture;
 	unsigned int skyboxVAO, skyboxVBO;
 
+	Shader shadowShader;
+	unsigned int depthMapFBO;
+	unsigned int depthMap;
+	unsigned int shadowWidth = 1024, shadowHeight = 1024;
+
 	GLuint lightSSBO;
 
 	GLuint maxLights{ 100 };
@@ -79,7 +84,34 @@ private:
 
 	Shader mainShader;
 
-	float timeOfDay = 0.1f;
+	float timeOfDay = 0.0f;
+	float setSunAzimuth = 0.0f;
+
+private:
+	inline glm::vec3 ComputeSceneCentroid(const std::vector<std::unique_ptr<SceneObject>>& sceneObjects)
+	{
+		if (sceneObjects.empty()) return glm::vec3(0.0f);
+
+		glm::vec3 sum(0.0f);
+
+		for (auto const& obj : sceneObjects)
+		{
+			sum += obj->transform.position;
+		}
+		return sum / float(sceneObjects.size());
+	}
+
+	inline float ComputeSceneRadius(const std::vector<std::unique_ptr<SceneObject>>& sceneObjects, const glm::vec3& center)
+	{
+		float maxDistance = 0.0f;
+		for (auto const& obj : sceneObjects)
+		{
+			float dist = glm::length(obj->transform.position - center);
+			maxDistance = glm::max(maxDistance, dist);
+		}
+
+		return maxDistance;
+	}
 };
 
 #endif // !RENDERER_H

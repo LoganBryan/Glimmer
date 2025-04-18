@@ -2,12 +2,12 @@
 
 in mat3 TBN;
 in vec3 N; // Normal in view space 
-//in vec3 L; // Light dir in view space 
 in vec3 V; // View dir in view space 
 in vec3 fragPosView;
 in vec2 texCoord;
 in vec3 normal;
 in vec4 tangent;
+in vec4 FragPosLightSpace;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -46,6 +46,7 @@ layout(location = 2) uniform sampler2D normalTexture;
 layout(location = 3) uniform sampler2D emissiveTexture;
 layout(location = 4) uniform sampler2D occlusionTexture;
 layout(location = 5) uniform samplerCube skybox;
+layout(location = 6) uniform sampler2D shadowMap;
 
 struct Light
 {
@@ -241,6 +242,36 @@ vec3 CalculateLighting(Light light, vec3 N, vec3 V, vec4 baseColor, float roughn
 	return result;
 }
 
+float CalculateShadow(vec4 fragPosLightSpace)
+{
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+	projCoords = projCoords * 0.5 + 0.5;
+
+	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	float currentDepth = projCoords.z;
+
+	float bias = max(0.05 * (1.0 - dot(normal, sunDirection)), 0.005);
+	float shadow = 0.9;
+	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+	for (int x = -1; x <= 1; x++)
+	{
+		for (int y = -1; y <= 1; y++)
+		{
+			float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+			shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+		}
+	}
+	shadow /= 9.0;
+
+	// outside the map, so consider it fully lit
+	//if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0) return 0.0;
+	if (projCoords.z > 1.0)
+		shadow = 0.0;
+
+
+	return shadow;
+}
+
 void main()
 {
 	vec4 baseColor = material.baseColorFactor;
@@ -297,6 +328,7 @@ void main()
 		lighting += CalculateLighting(lights[i], viewNormal, V, baseColor, roughness, metallic);
 	}
 
+	float shadow = CalculateShadow(FragPosLightSpace);
 	Light sunLight;
 	sunLight.type = 0u;
 	sunLight.color = vec4(sunColor, sunIntensity);
@@ -304,7 +336,7 @@ void main()
 
 	vec3 sunRadiance = sunColor * sunIntensity;
 	vec3 sunContribution = CalcDirectionalLight(sunLight, viewNormal, V, baseColor, roughness * 0.5 + 0.5, metallic); // Roughness changes causes it to be less sharp decreasing the specular highlight
-	lighting += sunRadiance * sunContribution;
+	lighting += (1.0 - shadow) * sunRadiance * sunContribution;
 
 	// Fresnel
 	float NdotV = max(dot(viewNormal, V), 0.0);
@@ -328,6 +360,8 @@ void main()
 
 	lighting += ambient;
 
+	vec3 baseLight = ambient + (1.0 - shadow) * sunRadiance * sunContribution;
+
 	// Final Color
 	vec3 finalColor = lighting * exposure; 
 	finalColor = ACESFilm(finalColor);
@@ -335,4 +369,11 @@ void main()
 	finalColor += emissiveColor.rgb;
 
 	fragColor = vec4(finalColor, baseColor.a);
+
+//	if (shadow > 0.1)
+//	{
+//		fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+//	}
+//	else
+//		fragColor = vec4(baseLight, 1.0);
 }
