@@ -31,11 +31,13 @@ Renderer::~Renderer()
 	glDeleteBuffers(1, &lightSSBO);
 }
 
-void Renderer::Init()
+void Renderer::Init(float width, float height)
 {
 	// Init shaders, load models, setup buffers etc
 	skyboxShader.Load("shaders/skybox.vert", "shaders/skybox.frag");
-	mainShader.Load("shaders/shader.vert", "shaders/shader.frag");
+	//mainShader.Load("shaders/shader.vert", "shaders/shader.frag");
+	geometryShader.Load("shaders/geometry.vert", "shaders/geometry.frag");
+	lightingShader.Load("shaders/lighting.vert", "shaders/lighting.frag");
 
 	// Load skybox textures
 	skyboxTexture = Utils::GenerateCubemapCompressed(skyboxFaces);
@@ -73,15 +75,25 @@ void Renderer::Init()
 	AddObject(gltfFile);
 	AddObject(gltfFile);
 	AddObject(gltfFile);
+	AddObject(gltfFile);
 
-	glm::vec3 lastPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 lastPosition = glm::vec3(0.0f, -0.5f, 0.0f);
+	float newX = 0.0f;
+	float newZ = 0.0f;
 	for (auto& obj : sceneObjects)
 	{
 		obj->transform.position = lastPosition;
 		obj->transform.rotation = glm::quat(1, 0, 0, 0);
 		obj->transform.scale = glm::vec3(1.0f);
 
-		lastPosition = glm::vec3(lastPosition.x + 2.0f, 0.0f, 0.0f);
+		newX += 2.0f;
+		if (newX >= 6.0f)
+		{
+			newX = 0.0f;
+			newZ -= 2.0f;
+		}
+
+		lastPosition = glm::vec3(newX, -0.5f, newZ);
 	}
 
 	// Light objects
@@ -112,9 +124,88 @@ void Renderer::Init()
 	areaLight.axisU = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
 	areaLight.axisV = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
 
-	lightsWorld.push_back(pointLight);
-	lightsWorld.push_back(spotLight);
-	lightsWorld.push_back(areaLight);
+	//lightsWorld.push_back(pointLight);
+	//lightsWorld.push_back(spotLight);
+	//lightsWorld.push_back(areaLight);
+
+	for (int i = 0; i < 50; i++)
+	{
+		float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		float g = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		float b = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		glm::vec4 newCol = glm::vec4(r, g, b, 1.0f);
+
+		float x = -5.0f + static_cast<float>(rand()) / (RAND_MAX / (10.0f));
+		float y = 0.0f + static_cast<float>(rand()) / (RAND_MAX / (50.0f));
+		float z = -5.0f + static_cast<float>(rand()) / (RAND_MAX / (10.0f));
+		glm::vec4 newPosition = glm::vec4(x, y, z, 1.0f);
+
+		LightData manyPointLights = {};
+		manyPointLights.type = 1;
+		manyPointLights.color = newCol;
+		manyPointLights.position = newPosition;
+		manyPointLights.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 0.0f);
+
+		lightsWorld.emplace_back(manyPointLights);
+	}
+
+	// Setup buffers
+	glGenFramebuffers(1, &gBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+
+	// Position
+	glGenTextures(1, &gPosition);
+	glBindTexture(GL_TEXTURE_2D, gPosition);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+
+	// Normal 
+	glGenTextures(1, &gNormal);
+	glBindTexture(GL_TEXTURE_2D, gNormal);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+
+	// Albedo + Metallic
+	glGenTextures(1, &gAlbedoMetallic);
+	glBindTexture(GL_TEXTURE_2D, gAlbedoMetallic);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoMetallic, 0);
+
+	// Roughness + AO
+	glGenTextures(1, &gRoughAO);
+	glBindTexture(GL_TEXTURE_2D, gRoughAO);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, gRoughAO, 0);
+
+	// Emissive
+	glGenTextures(1, &gEmissive);
+	glBindTexture(GL_TEXTURE_2D, gEmissive);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, gEmissive, 0);
+
+	// Draw into attachments
+	unsigned int attachments[5] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+	glDrawBuffers(5, attachments);
+
+	// Create and share depth buffer
+	glGenRenderbuffers(1, &rboDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+	
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cerr << "GBuffer is not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -129,6 +220,8 @@ void Renderer::Init()
 
 void Renderer::Render(float width, float height)
 {
+	fpsCounter.Update();
+
 	glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -136,11 +229,34 @@ void Renderer::Render(float width, float height)
 	const float nearPlane = 0.1f;
 	const float farPlane = 100.0f;
 
+	// Geometry Pass
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glm::mat4 model = glm::mat4(1.0f);
 	CameraMatrices camMatrices = Camera::GetInstance()->GetMVP(aspect, nearPlane, farPlane, model);
 	glm::mat4 viewMatrix = Camera::GetInstance()->GetViewMatrix();
 
-	// Lights
+	// gLTF object
+	geometryShader.Use();
+	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
+	glStencilMask(0xFF); // Enable writing to stencil buffer
+
+	geometryShader.SetMatrix4("projection", camMatrices.projection);
+	geometryShader.SetMatrix4("view", camMatrices.view);
+
+	for (auto& obj : sceneObjects)
+	{
+		glm::mat4 model = obj->transform.GetMatrix();
+
+		obj->model.DrawModel(geometryShader, model);
+		obj->model.UpdateSkins(model);
+	}
+
+	// Lighting Pass
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	// Transform world space to view space
 	lightCount = static_cast<GLuint>(lightsWorld.size());
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
@@ -153,11 +269,6 @@ void Renderer::Render(float width, float height)
 		lightsView[i].direction = viewMatrix * glm::vec4(glm::vec3(lightsWorld[i].direction), 0.0f);
 	}
 	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, sizeof(LightData) * lightCount, lightsView.data());
-
-	// gLTF object
-	mainShader.Use();
-	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
-	glStencilMask(0xFF); // Enable writing to stencil buffer
 
 	// Update sun
 	const float dT = 0.016f;
@@ -179,22 +290,48 @@ void Renderer::Render(float width, float height)
 	float environmentIntensity = glm::smoothstep(-0.866f, 0.866f, sunHeight);
 	environmentIntensity = glm::mix(0.02f, 1.0f, environmentIntensity);
 
-	mainShader.SetVec3("sunDirection", sunDirView);
-	mainShader.SetFloat("sunIntensity", sunIntensity);
-	mainShader.SetFloat("environmentIntensity", environmentIntensity);
+	lightingShader.Use();
 
-	mainShader.SetMatrix4("projection", camMatrices.projection);
-	mainShader.SetMatrix4("view", camMatrices.view);
+	// Bind GBuffer textures to sampler units
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, gPosition);
+	lightingShader.SetInt("gPosition", 0);
 
-	for (auto& obj : sceneObjects)
-	{
-		glm::mat4 model = obj->transform.GetMatrix();
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, gNormal);
+	lightingShader.SetInt("gNormal", 1);
 
-		obj->model.DrawModel(mainShader, model);
-		obj->model.UpdateSkins(model);
-	}
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, gAlbedoMetallic);
+	lightingShader.SetInt("gAlbedoMetallic", 2);
 
-	// Skybox - Drawn last
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, gRoughAO);
+	lightingShader.SetInt("gRoughAO", 3);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, gEmissive);
+	lightingShader.SetInt("gEmissive", 4);
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+	lightingShader.SetInt("skybox", 5);
+
+	lightingShader.SetVec3("sunDirection", sunDirView);
+	lightingShader.SetFloat("sunIntensity", sunIntensity);
+	lightingShader.SetFloat("environmentIntensity", environmentIntensity);
+
+	glDisable(GL_DEPTH_TEST);
+	RenderQuad();
+	glEnable(GL_DEPTH_TEST);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// Render anything with forward past here
+
+	//Skybox - Drawn last
 	glDepthFunc(GL_LEQUAL);
 
 	skyboxShader.Use();
@@ -213,7 +350,8 @@ void Renderer::Render(float width, float height)
 
 	gui->NewFrame();
 	gui->BeginFrame("Test Window", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking, ImVec2(854, 480));
-	ImGui::Text("Test!");
+	ImGui::Text("FPS: %.2f", fpsCounter.GetFPS());
+	ImGui::Text("Frame Time: %.4f ms", fpsCounter.GetFrameTime() * 1000.0f);
 	gui->EndFrame();
 
 	gui->Render();
@@ -222,8 +360,35 @@ void Renderer::Render(float width, float height)
 void Renderer::AddObject(const std::filesystem::path& modelPath)
 {
 	auto newObject = std::make_unique<SceneObject>();
-	newObject->model.LoadModel(modelPath, mainShader);  // TODO: might eventually support changing shader
+	newObject->model.LoadModel(modelPath, geometryShader);  // TODO: might eventually support changing shader
 	newObject->transform.position = glm::vec3(0, 0, 0);
 
 	sceneObjects.emplace_back(std::move(newObject));
+}
+
+void Renderer::RenderQuad()
+{
+	static GLuint quadVAO = 0, quadVBO = 0;
+	if (quadVAO == 0)
+	{
+		float quadVertices[] =
+		{
+			-1.0f,  1.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 1.0f, 0.0f,
+		};
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
 }

@@ -16,6 +16,7 @@
 
 #include "Shader.h"
 #include "OpenGL/Model/GltfLoader.h"
+#include "FPSCounter.h"
 
 struct SceneObject
 {
@@ -52,10 +53,12 @@ public:
 	Renderer(GLFWwindow* window);
 	~Renderer();
 
-	void Init();
+	void Init(float width, float height);
 	void Render(float width, float height);
 
 	void AddObject(const std::filesystem::path& modelPath);
+
+	void RenderQuad();
 	//void UpdateGrabbedObject(int objectIndex, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& grabOffset);
 
 	// TODO: replace with a function to retrieve and update the closest object
@@ -63,6 +66,7 @@ public:
 
 private:
 	GLFWwindow* window;
+	FPSCounter fpsCounter;
 
 	std::vector<std::unique_ptr<SceneObject>> sceneObjects; // TODO: should update this to have multiple containers, grabbable objects, scene objects and player objects (hands, body etc)
 	std::vector<LightData> lightsWorld;
@@ -74,12 +78,18 @@ private:
 
 	GLuint lightSSBO;
 
-	GLuint maxLights{ 100 };
+	GLuint maxLights{ 600 };
 	GLuint lightCount{ 0 };
 
-	Shader mainShader;
+	//Shader mainShader;
+	Shader geometryShader;
+	Shader lightingShader;
 
 	float timeOfDay = 0.1f;
+
+	unsigned int gBuffer;
+	unsigned int gPosition, gNormal, gAlbedoMetallic, gRoughAO, gEmissive;
+	unsigned int rboDepth;
 };
 
 #endif // !RENDERER_H

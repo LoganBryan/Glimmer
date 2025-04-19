@@ -66,7 +66,7 @@ void Application::SetupCallbacks()
 void Application::Run()
 {
 	Renderer renderer(window);
-	renderer.Init();
+	renderer.Init(width, height);
 
 	while (!glfwWindowShouldClose(window))
 	{
