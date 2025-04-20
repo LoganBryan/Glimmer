@@ -38,6 +38,7 @@ void Renderer::Init(float width, float height)
 	//mainShader.Load("shaders/shader.vert", "shaders/shader.frag");
 	geometryShader.Load("shaders/geometry.vert", "shaders/geometry.frag");
 	lightingShader.Load("shaders/lighting.vert", "shaders/lighting.frag");
+	shadowVolumeShader.Load("shaders/shadowVolume.vert", "shaders/shadowVolume.geom", "shaders/shadowVolume.frag");
 
 	// Load skybox textures
 	skyboxTexture = Utils::GenerateCubemapCompressed(skyboxFaces);
@@ -202,7 +203,7 @@ void Renderer::Init(float width, float height)
 	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
-	
+
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cerr << "GBuffer is not complete!" << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -236,40 +237,6 @@ void Renderer::Render(float width, float height)
 	CameraMatrices camMatrices = Camera::GetInstance()->GetMVP(aspect, nearPlane, farPlane, model);
 	glm::mat4 viewMatrix = Camera::GetInstance()->GetViewMatrix();
 
-	// gLTF object
-	geometryShader.Use();
-	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
-	glStencilMask(0xFF); // Enable writing to stencil buffer
-
-	geometryShader.SetMatrix4("projection", camMatrices.projection);
-	geometryShader.SetMatrix4("view", camMatrices.view);
-
-	for (auto& obj : sceneObjects)
-	{
-		glm::mat4 model = obj->transform.GetMatrix();
-
-		obj->model.DrawModel(geometryShader, model);
-		obj->model.UpdateSkins(model);
-	}
-
-	// Lighting Pass
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// Transform world space to view space
-	lightCount = static_cast<GLuint>(lightsWorld.size());
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
-	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &lightCount);
-
-	lightsView = lightsWorld;
-	for (size_t i = 0; i < lightsView.size(); i++)
-	{
-		lightsView[i].position = viewMatrix * lightsWorld[i].position;
-		lightsView[i].direction = viewMatrix * glm::vec4(glm::vec3(lightsWorld[i].direction), 0.0f);
-	}
-	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, sizeof(LightData) * lightCount, lightsView.data());
-
 	// Update sun
 	const float dT = 0.016f;
 	timeOfDay += dT * 0.01;
@@ -289,6 +256,75 @@ void Renderer::Render(float width, float height)
 
 	float environmentIntensity = glm::smoothstep(-0.866f, 0.866f, sunHeight);
 	environmentIntensity = glm::mix(0.02f, 1.0f, environmentIntensity);
+
+	// gLTF object
+	geometryShader.Use();
+	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
+	glStencilMask(0xFF); // Enable writing to stencil buffer
+
+	geometryShader.SetMatrix4("projection", camMatrices.projection);
+	geometryShader.SetMatrix4("view", camMatrices.view);
+
+	for (auto& obj : sceneObjects)
+	{
+		glm::mat4 model = obj->transform.GetMatrix();
+
+		obj->model.DrawModel(geometryShader, model);
+		obj->model.UpdateSkins(model);
+	}
+
+	// Shadow Volume Pass
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Don't need color
+	glDepthMask(GL_FALSE);
+	glStencilFunc(GL_ALWAYS, 0, 0xFFFF); // Always pass stencil
+	// Front face fail = increment. Back face fail = decrement
+	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
+	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
+
+	shadowVolumeShader.Use();
+
+	// Place light far away along sun 
+	glm::vec3 lightPosWorld = -sunDir * 10000.0f;
+	// Transform into view space
+	glm::vec4 lightPosView = viewMatrix * glm::vec4(lightPosWorld, 1.0f);
+
+	glm::mat4 infProj = glm::infinitePerspective(Camera::GetInstance()->GetFOV(), aspect, nearPlane);
+
+	shadowVolumeShader.SetVec4("LightPosition", lightPosView);
+	shadowVolumeShader.SetMatrix4("ProjMatrix", infProj);
+
+	shadowVolumeShader.SetMatrix4("projection", camMatrices.projection);
+	shadowVolumeShader.SetMatrix4("view", camMatrices.view);
+
+	for (auto& obj : sceneObjects)
+	{
+		glm::mat4 model = obj->transform.GetMatrix();
+
+		obj->model.DrawShadowVolume(shadowVolumeShader, model);
+		//obj->model.UpdateSkins(model);
+	}
+
+	// Restore
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glDepthMask(GL_TRUE);
+
+	// Lighting Pass
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Transform world space to view space
+	lightCount = static_cast<GLuint>(lightsWorld.size());
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &lightCount);
+
+	lightsView = lightsWorld;
+	for (size_t i = 0; i < lightsView.size(); i++)
+	{
+		lightsView[i].position = viewMatrix * lightsWorld[i].position;
+		lightsView[i].direction = viewMatrix * glm::vec4(glm::vec3(lightsWorld[i].direction), 0.0f);
+	}
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, sizeof(LightData) * lightCount, lightsView.data());
 
 	lightingShader.Use();
 

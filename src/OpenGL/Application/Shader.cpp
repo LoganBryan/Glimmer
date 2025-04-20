@@ -6,64 +6,74 @@ Shader::Shader()
 
 void Shader::Load(const char* vertexPath, const char* fragmentPath)
 {
-	// Recieve source from path
-	std::string vertexSource;
-	std::string fragmentSource;
-
-	std::ifstream vertFile;
-	std::ifstream fragFile;
-	// Allow objects to throw exceptions
-	vertFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	fragFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-	try
-	{
-		vertFile.open(vertexPath);
-		fragFile.open(fragmentPath);
-		std::stringstream vertStream, fragStream;
-		// Read buffer content into streams
-		vertStream << vertFile.rdbuf();
-		fragStream << fragFile.rdbuf();
-		vertFile.close();
-		fragFile.close();
-		// Stream to string
-		vertexSource = vertStream.str();
-		fragmentSource = fragStream.str();
-	}
-	catch (std::ifstream::failure e)
-	{
-		printf("Shader file failed to read!");
-	}
-	const char* vertexShader = vertexSource.c_str();
-	const char* fragmentShader = fragmentSource.c_str();
-
-	// Compile shaders
-	unsigned int vertex, fragment;
-
-	// Vertex shader
-	vertex = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertex, 1, &vertexShader, NULL);
-	glCompileShader(vertex);
-	checkShaderCompilation(vertex, "Vertex");
-
-	// Fragment shader
-	fragment = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment, 1, &fragmentShader, NULL);
-	glCompileShader(fragment);
-	checkShaderCompilation(fragment, "Fragment");
-
-	// Shader program
-	programID = glCreateProgram();
-	glAttachShader(programID, vertex);
-	glAttachShader(programID, fragment);
-	glLinkProgram(programID);
-	checkProgramCompilation(programID);
-
-	glDeleteShader(vertex);
-	glDeleteShader(fragment);
+	CompileAndLink(vertexPath, fragmentPath, nullptr);
 }
 
-void Shader::checkShaderCompilation(unsigned int& shader, std::string shaderType)
+void Shader::Load(const char* vertexPath, const char* geometryPath, const char* fragmentPath)
+{
+	CompileAndLink(vertexPath, fragmentPath, geometryPath);
+}
+
+void Shader::CompileAndLink(const char* vPath, const char* fPath, const char* gPath)
+{
+	auto readFile = [](const char* path)
+		{
+			std::ifstream file(path);
+			if (!file.is_open())
+			{
+				std::cerr << "Failed to open shader file: " << path << "!" << std::endl;
+				return std::string{};
+			}
+			std::stringstream ss;
+			ss << file.rdbuf();
+			return ss.str();
+		};
+
+	std::string vCode = readFile(vPath);
+	std::string fCode = readFile(fPath);
+	std::string gCode;
+	if (gPath)
+		gCode = readFile(gPath);
+
+	const char* vSrc = vCode.c_str();
+	const char* fSrc = fCode.c_str();
+	const char* gSrc = gPath ? gCode.c_str() : nullptr;
+
+	unsigned int vertComp = glCreateShader(GL_VERTEX_SHADER);
+	unsigned int fragComp = glCreateShader(GL_FRAGMENT_SHADER);
+	unsigned int geomComp = 0;
+
+	glShaderSource(vertComp, 1, &vSrc, nullptr);
+	glCompileShader(vertComp);
+	CheckShaderCompilation(vertComp, "Vertex");
+
+	glShaderSource(fragComp, 1, &fSrc, nullptr);
+	glCompileShader(fragComp);
+	CheckShaderCompilation(fragComp, "Fragment");
+
+	if (gSrc)
+	{
+		geomComp = glCreateShader(GL_GEOMETRY_SHADER);
+		glShaderSource(geomComp, 1, &gSrc, nullptr);
+		glCompileShader(geomComp);
+		CheckShaderCompilation(geomComp, "Geometry");
+	}
+
+	programID = glCreateProgram();
+	glAttachShader(programID, vertComp);
+	glAttachShader(programID, fragComp);
+	if (gSrc)
+		glAttachShader(programID, geomComp);
+	glLinkProgram(programID);
+	CheckProgramCompilation(programID);
+
+	glDeleteShader(vertComp);
+	glDeleteShader(fragComp);
+	if (gSrc)
+		glDeleteShader(geomComp);
+}
+
+void Shader::CheckShaderCompilation(unsigned int& shader, std::string shaderType)
 {
 	int success;
 	char infoLog[512];
@@ -76,7 +86,7 @@ void Shader::checkShaderCompilation(unsigned int& shader, std::string shaderType
 	}
 }
 
-void Shader::checkProgramCompilation(unsigned int& program)
+void Shader::CheckProgramCompilation(unsigned int& program)
 {
 	int success;
 	char infoLog[512];

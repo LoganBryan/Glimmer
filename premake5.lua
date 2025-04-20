@@ -14,10 +14,12 @@ IncludeDirs["GL"] = "thirdparty/GL"
 IncludeDirs["FastGLTF"] = "thirdparty/fastgltf"
 IncludeDirs["simdJSON"] = "thirdparty/simdjson"
 IncludeDirs["imGUI"] = "thirdparty/imgui"
+IncludeDirs["MeshOpt"] = "thirdparty/meshoptimizer"
 
 
 LibraryDirs = {}
 LibraryDirs["GLFW"] = "thirdparty/GLFW/lib-vc2022"
+LibraryDirs["MeshOpt"] = "thirdparty/meshoptimizer"
  
 project "Glimmer"
     location "src"
@@ -67,18 +69,21 @@ project "Glimmer"
         "%{IncludeDirs.GL}",
         "%{IncludeDirs.FastGLTF}",
         "%{IncludeDirs.simdJSON}",
-        "%{IncludeDirs.imGUI}"
+        "%{IncludeDirs.imGUI}",
+        "%{IncludeDirs.MeshOpt}"
     }
 
     libdirs
     {
-        "%{LibraryDirs.GLFW}"
+        "%{LibraryDirs.GLFW}",
+        "%{LibraryDirs.MeshOpt}",
     }
     
     links
     {
         "glfw3.lib",
-        "opengl32.lib"
+        "opengl32.lib",
+        "meshoptimizer.lib"
     }
 
     filter "system:windows"
@@ -97,7 +102,6 @@ project "Glimmer"
 
         postbuildcommands
         {
-
         }
 
     filter "configurations:Release"
@@ -108,5 +112,4 @@ project "Glimmer"
 
         postbuildcommands
         {
-            
         }

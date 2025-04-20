@@ -74,6 +74,9 @@ struct Primitive
 	GLuint vertexBuffer;
 	GLuint indexBuffer;
 
+	GLuint adjacencyIndexBuffer;
+	size_t adjacencyIndexCount;
+
 	std::size_t materialUniformsIndex;
 	GLuint albedoTexture;
 	GLuint metallicRoughnessTexture;

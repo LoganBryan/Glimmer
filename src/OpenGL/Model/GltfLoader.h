@@ -30,6 +30,8 @@ public:
 
 	bool LoadModel(std::filesystem::path filePath, Shader& shader);
 	void DrawModel(Shader& shader, glm::mat4& objectTransform);
+	void DrawShadowVolume(Shader& shader, glm::mat4& objectTransform);
+
 	void UpdateSkins(glm::mat4& objectTransform);
 	void UpdateJointHeirarchy(Skin& skin, Joint& joint);
 	bool UpdateJointTransform(const std::string& jointName, const glm::mat4& transform);
@@ -53,6 +55,7 @@ private:
 	bool LoadImage(fastgltf::Image& image);
 
 	void DrawMesh(std::size_t meshIndex);
+	void DrawShadowVolumeMesh(std::size_t meshIndex);
 };
 
 #endif // !GLTFLOADER_H

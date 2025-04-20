@@ -84,12 +84,16 @@ private:
 	//Shader mainShader;
 	Shader geometryShader;
 	Shader lightingShader;
+	Shader shadowVolumeShader;
 
 	float timeOfDay = 0.1f;
 
 	unsigned int gBuffer;
 	unsigned int gPosition, gNormal, gAlbedoMetallic, gRoughAO, gEmissive;
 	unsigned int rboDepth;
+
+	GLuint colorDepthFBO;
+	unsigned int ambBuf, depthBuf, diffSpecTex;
 };
 
 #endif // !RENDERER_H

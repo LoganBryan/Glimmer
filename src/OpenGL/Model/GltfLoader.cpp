@@ -1,4 +1,5 @@
 #include "GltfLoader.h"
+#include <meshoptimizer.h>
 
 GltfLoader::GltfLoader() {}
 
@@ -91,6 +92,24 @@ void GltfLoader::DrawModel(Shader& shader, glm::mat4& objectTransform)
 					glm::mat4 finalModel = objectTransform * transform;
 					shader.SetMatrix4("model", finalModel);
 					DrawMesh(*node.meshIndex);
+				}
+			});
+	}
+}
+
+void GltfLoader::DrawShadowVolume(Shader& shader, glm::mat4& objectTransform)
+{
+	if (!viewer.asset.scenes.empty() && viewer.sceneIndex < viewer.asset.scenes.size())
+	{
+		fastgltf::iterateSceneNodes(viewer.asset, viewer.sceneIndex, fastgltf::math::fmat4x4(), [&](fastgltf::Node& node, fastgltf::math::fmat4x4 matrix)
+			{
+				if (node.meshIndex.has_value())
+				{
+					glm::mat4 transform = glm::make_mat4(matrix.data());
+					glm::mat finalModel = objectTransform * transform;
+					shader.Use();
+					shader.SetMatrix4("model", finalModel);
+					DrawShadowVolumeMesh(*node.meshIndex);
 				}
 			});
 	}
@@ -474,6 +493,41 @@ bool GltfLoader::LoadMeshData(fastgltf::Mesh& mesh)
 		if (!indexAccessor.bufferViewIndex.has_value()) return false;
 		draw.count = static_cast<std::uint32_t>(indexAccessor.count);
 
+		// Original Indicies
+		std::vector<uint32_t> indicies;
+		indicies.reserve(indexAccessor.count);
+		fastgltf::iterateAccessor<uint32_t>(asset, indexAccessor, [&](uint32_t id)
+			{
+				indicies.push_back(id);
+			});
+
+		// Original Positions
+		std::vector<glm::vec3> positions;
+		auto& positionAccesor = asset.accessors[posIt->accessorIndex];
+		positions.reserve(positionAccesor.count);
+		fastgltf::iterateAccessor<fastgltf::math::fvec3>(asset, positionAccesor, [&](fastgltf::math::fvec3 p)
+			{
+				positions.emplace_back(p.x(), p.y(), p.z());
+			});
+
+		{
+			size_t triCount = indicies.size() / 3;
+			std::vector<uint32_t> adjacency(triCount * 6);
+
+			meshopt_generateAdjacencyIndexBuffer(
+				adjacency.data(),
+				indicies.data(),
+				indicies.size(),
+				reinterpret_cast<const float*>(positions.data()),
+				positions.size(),
+				sizeof(glm::vec3)
+			);
+
+			glCreateBuffers(1, &primitive.adjacencyIndexBuffer);
+			glNamedBufferData(primitive.adjacencyIndexBuffer, adjacency.size() * sizeof(uint32_t), adjacency.data(), GL_STATIC_DRAW);
+			primitive.adjacencyIndexBuffer = static_cast<uint32_t>(adjacency.size());
+		}
+
 		// Create index buffer, then copy indicies into it
 		glCreateBuffers(1, &primitive.indexBuffer);
 		if (indexAccessor.componentType == fastgltf::ComponentType::UnsignedByte || indexAccessor.componentType == fastgltf::ComponentType::UnsignedShort)
@@ -815,5 +869,20 @@ void GltfLoader::DrawMesh(std::size_t meshIndex)
 		}
 
 		glDrawElementsIndirect(primitive.primitiveType, primitive.indexType, reinterpret_cast<const void*>(i * sizeof(Primitive)));
+	}
+}
+
+void GltfLoader::DrawShadowVolumeMesh(std::size_t meshIndex)
+{
+	auto& mesh = viewer.meshes[meshIndex];
+
+	for (auto& primitive : mesh.primitives)
+	{
+		if (!primitive.adjacencyIndexBuffer || primitive.adjacencyIndexCount == 0) continue;
+
+		glBindVertexArray(primitive.vertexArray);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, primitive.adjacencyIndexBuffer);
+
+		glDrawElements(GL_TRIANGLES_ADJACENCY, static_cast<GLsizei>(primitive.adjacencyIndexCount), GL_UNSIGNED_INT, nullptr);
 	}
 }
