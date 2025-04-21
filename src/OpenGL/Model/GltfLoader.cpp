@@ -64,7 +64,6 @@ bool GltfLoader::LoadModel(std::filesystem::path filePath, Shader& shader)
 	shader.SetInt("occlusionTexture", 4);
 	shader.SetInt("skybox", 5);
 
-
 	viewer.sceneIndex = viewer.asset.defaultScene.value_or(0);
 
 	return true;
@@ -286,6 +285,10 @@ bool GltfLoader::LoadMeshData(fastgltf::Mesh& mesh)
 		GLuint VAO = GL_NONE;
 		glCreateVertexArrays(1, &VAO);
 
+		// Generate VAO for Shadows
+		GLuint shadowVAO = GL_NONE;
+		glCreateVertexArrays(1, &shadowVAO);
+
 		std::size_t baseColorTexIndex = 0;
 
 		// Get output primitive
@@ -494,38 +497,58 @@ bool GltfLoader::LoadMeshData(fastgltf::Mesh& mesh)
 		draw.count = static_cast<std::uint32_t>(indexAccessor.count);
 
 		// Original Indicies
-		std::vector<uint32_t> indicies;
-		indicies.reserve(indexAccessor.count);
+		std::vector<uint32_t> originalIndicies;
+		originalIndicies.reserve(indexAccessor.count);
 		fastgltf::iterateAccessor<uint32_t>(asset, indexAccessor, [&](uint32_t id)
 			{
-				indicies.push_back(id);
+				originalIndicies.push_back(id);
 			});
 
 		// Original Positions
-		std::vector<glm::vec3> positions;
-		auto& positionAccesor = asset.accessors[posIt->accessorIndex];
-		positions.reserve(positionAccesor.count);
-		fastgltf::iterateAccessor<fastgltf::math::fvec3>(asset, positionAccesor, [&](fastgltf::math::fvec3 p)
+		std::vector<glm::vec3> originalPositions;
+		auto& positionAccess = asset.accessors[posIt->accessorIndex];
+		originalPositions.reserve(positionAccess.count);
+		fastgltf::iterateAccessor<fastgltf::math::fvec3>(asset, positionAccess, [&](fastgltf::math::fvec3 p)
 			{
-				positions.emplace_back(p.x(), p.y(), p.z());
+				originalPositions.emplace_back(p.x(), p.y(), p.z());
 			});
 
 		{
-			size_t triCount = indicies.size() / 3;
+			size_t triCount = originalIndicies.size() / 3;
 			std::vector<uint32_t> adjacency(triCount * 6);
 
 			meshopt_generateAdjacencyIndexBuffer(
 				adjacency.data(),
-				indicies.data(),
-				indicies.size(),
-				reinterpret_cast<const float*>(positions.data()),
-				positions.size(),
+				originalIndicies.data(),
+				originalIndicies.size(),
+				reinterpret_cast<const float*>(originalPositions.data()),
+				originalPositions.size(),
 				sizeof(glm::vec3)
 			);
 
 			glCreateBuffers(1, &primitive.adjacencyIndexBuffer);
 			glNamedBufferData(primitive.adjacencyIndexBuffer, adjacency.size() * sizeof(uint32_t), adjacency.data(), GL_STATIC_DRAW);
-			primitive.adjacencyIndexBuffer = static_cast<uint32_t>(adjacency.size());
+			primitive.adjacencyIndexCount = static_cast<uint32_t>(adjacency.size());
+
+			primitive.shadowArray = shadowVAO;
+			glBindVertexArray(shadowVAO);
+
+			glVertexArrayVertexBuffer(shadowVAO, 0, primitive.vertexBuffer, 0, sizeof(Vertex));
+
+			// Position attrib
+			glEnableVertexArrayAttrib(shadowVAO, 0);
+			glVertexArrayAttribFormat(shadowVAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+			glVertexArrayAttribBinding(shadowVAO, 0, 0);
+
+			// Normal attrib
+			glEnableVertexArrayAttrib(shadowVAO, 1);
+			glVertexArrayAttribFormat(shadowVAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+			glVertexArrayAttribBinding(shadowVAO, 1, 0);
+
+			// Bind adjaceny as element array
+			glVertexArrayElementBuffer(shadowVAO, primitive.adjacencyIndexBuffer);
+
+			glBindVertexArray(0);
 		}
 
 		// Create index buffer, then copy indicies into it
@@ -880,9 +903,9 @@ void GltfLoader::DrawShadowVolumeMesh(std::size_t meshIndex)
 	{
 		if (!primitive.adjacencyIndexBuffer || primitive.adjacencyIndexCount == 0) continue;
 
-		glBindVertexArray(primitive.vertexArray);
+		glBindVertexArray(primitive.shadowArray);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, primitive.adjacencyIndexBuffer);
 
-		glDrawElements(GL_TRIANGLES_ADJACENCY, static_cast<GLsizei>(primitive.adjacencyIndexCount), GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES_ADJACENCY, primitive.adjacencyIndexCount, GL_UNSIGNED_INT, nullptr);
 	}
 }

@@ -70,6 +70,7 @@ struct Primitive
 	GLenum primitiveType;
 	GLenum indexType;
 	GLuint vertexArray;
+	GLuint shadowArray;
 
 	GLuint vertexBuffer;
 	GLuint indexBuffer;

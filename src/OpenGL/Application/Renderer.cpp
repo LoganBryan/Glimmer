@@ -259,8 +259,9 @@ void Renderer::Render(float width, float height)
 
 	// gLTF object
 	geometryShader.Use();
-	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
 	glStencilMask(0xFF); // Enable writing to stencil buffer
+	glStencilFunc(GL_ALWAYS, 1, 0xFF); // All fragments pass stencil test
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	geometryShader.SetMatrix4("projection", camMatrices.projection);
 	geometryShader.SetMatrix4("view", camMatrices.view);
@@ -274,10 +275,16 @@ void Renderer::Render(float width, float height)
 	}
 
 	// Shadow Volume Pass
+	glClear(GL_STENCIL_BUFFER_BIT);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Don't need color
 	glDepthMask(GL_FALSE);
+
+	glStencilMask(0xFF);
 	glStencilFunc(GL_ALWAYS, 0, 0xFFFF); // Always pass stencil
+
 	// Front face fail = increment. Back face fail = decrement
 	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
 	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
@@ -305,13 +312,21 @@ void Renderer::Render(float width, float height)
 		//obj->model.UpdateSkins(model);
 	}
 
-	// Restore
+	// Restore after shadow pass
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDepthMask(GL_TRUE);
+
+	//glStencilMask(0x00);
+	glStencilFunc(GL_EQUAL, 0, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_ONE, GL_ONE);
 
 	// Lighting Pass
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_CULL_FACE);
 
 	// Transform world space to view space
 	lightCount = static_cast<GLuint>(lightsWorld.size());
@@ -366,6 +381,8 @@ void Renderer::Render(float width, float height)
 	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	// Render anything with forward past here
+	glStencilMask(0xFF);
+	glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
 	//Skybox - Drawn last
 	glDepthFunc(GL_LEQUAL);
