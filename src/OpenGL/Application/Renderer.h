@@ -15,6 +15,7 @@
 #include <string>
 
 #include "Shader.h"
+#include "ComputeShader.h"
 #include "OpenGL/Model/GltfLoader.h"
 
 struct SceneObject
