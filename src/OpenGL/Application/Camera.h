@@ -50,6 +50,7 @@ public:
 	inline const glm::vec3& GetPosition() const { return position; }
 	inline const glm::vec3& GetFront() const { return front; }
 	inline const glm::vec3& GetUp() const { return up; }
+	inline const float GetFOV() const { return zoom; }
 	
 	void ProcessKeyboard(GLFWwindow* window, float deltaTime);
 	void ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch = true);
