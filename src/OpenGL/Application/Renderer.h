@@ -29,25 +29,6 @@ struct SceneObject
 	int grabbedByHand = -1; // -1 none, 0 left, 1 right
 };
 
-//struct alignas(16) LightData
-//{
-//	GLuint type; // x = 0, 1, 2, 3 (Dir, Point, Spot, Area)  // 4 bytes, offset 16
-//	GLuint _padding_1[3];									 // 12 bytes, offset 4
-//	glm::vec3 _padding_2;									 // 12 bytes, offset 32
-//	float _padding_3;									 // 12 bytes, offset 28
-//
-//	glm::vec4 color; // w - intensity
-//
-//	glm::vec4 position; // xyz - position (used for point, spot and area) 
-//	glm::vec4 direction; // xyz - direction (used for dir and spot)
-//
-//	glm::vec4 cutOff; // Used for spot. x is inner and y is outer
-//
-//	glm::vec4 attenuation; // x - constant, y - linear, z - quadratic, w - radius
-//	glm::vec4 axisU; // Area light. xyz edge U
-//	glm::vec4 axisV; // Area light. xyz edge V
-//};
-
 struct alignas(16) LightData
 {
 	GLuint type; // x = 0, 1, 2, 3 (Dir, Point, Spot, Area) 
@@ -83,7 +64,7 @@ public:
 	void Init();
 	void Render(float width, float height);
 
-	void AddObject(const std::filesystem::path& modelPath);
+	void AddObject(const std::filesystem::path& modelPath, Shader& shader);
 	//void UpdateGrabbedObject(int objectIndex, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& grabOffset);
 
 	// TODO: replace with a function to retrieve and update the closest object

@@ -69,14 +69,14 @@ void Renderer::Init()
 
 	// TODO: Should probably seperate scene setup from renderer, and then extend addobject function (to add a unique id, DisplayName, set transform matrix etc)
 	// Loading should also not be handled inside of renderer!
-	AddObject(gltfFile);
-	AddObject(gltfFile);
-	AddObject(gltfFile);
-	AddObject(gltfFile);
-	AddObject(gltfFile);
-	AddObject(gltfFile);
-	AddObject(gltfFile);
-	AddObject(gltfFile);
+	AddObject(gltfFile, mainShader);
+	AddObject(gltfFile, mainShader);
+	AddObject(gltfFile, mainShader);
+	AddObject(gltfFile, mainShader);
+	AddObject(gltfFile, mainShader);
+	AddObject(gltfFile, mainShader);
+	AddObject(gltfFile, mainShader);
+	AddObject(gltfFile, mainShader);
 
 	glm::vec3 lastPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 	for (auto& obj : sceneObjects)
@@ -87,33 +87,6 @@ void Renderer::Init()
 
 		lastPosition = glm::vec3(lastPosition.x + 2.0f, 0.0f, 0.0f);
 	}
-
-	// Light objects
-	LightData pointLight = {};
-	pointLight.type = 1;
-	pointLight.color = glm::vec4(1.0f, 0.0f, 0.0f, 5.0f);
-	pointLight.position = glm::vec4(10.0f, 4.0f, 0.0f, 1.0f);
-	pointLight.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 10.0f);
-
-	LightData spotLight = {};
-	spotLight.type = 2;
-	spotLight.color = glm::vec4(0.0f, 0.0f, 1.0f, 30.0f);
-	spotLight.position = glm::vec4(5.0f, 4.0f, 0.0f, 1.0f);
-	spotLight.direction = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
-	spotLight.cutOff = glm::vec4(glm::cos(glm::radians(5.0f)), glm::cos(glm::radians(40.0f)), 0.0f, 0.0f);
-	spotLight.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 5.0f);
-
-	LightData areaLight = {};
-	areaLight.type = 3;
-	areaLight.color = glm::vec4(0.0f, 1.0f, 0.0f, 10.0f);
-	areaLight.position = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
-	areaLight.axisU = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-	areaLight.axisV = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-	areaLight.attenuation = glm::vec4(0.0f, 0.0f, 0.0f, 2.0f);
-
-	//lightsWorld.push_back(pointLight);
-	//lightsWorld.push_back(spotLight);
-	//lightsWorld.push_back(areaLight);
 
 	for (int i = 0; i < 500; i++)
 	{
@@ -189,22 +162,6 @@ void Renderer::Render(float width, float height)
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
 	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(LightData) * lightCount, lightsView.data());
 	glBufferSubData(GL_SHADER_STORAGE_BUFFER, maxLights * sizeof(LightData), sizeof(GLuint), &lightCount);
-
-	//clusterShader.Use();
-	//clusterShader.SetFloat("zNear", nearPlane);
-	//clusterShader.SetFloat("zFar", farPlane);
-	//clusterShader.SetVec3("gridSize", gridSizeX, gridSizeY, gridSizeZ);
-	//clusterShader.SetVec2("screenDim", (GLuint)width, (GLuint)height);
-	//glm::mat4 inverseProj = glm::inverse(projMatrix);
-	//clusterShader.SetMatrix4("inverseProj", inverseProj);
-	//glDispatchCompute(gridSizeX, gridSizeY, gridSizeZ);
-
-	//cullLightShader.Use();
-	//cullLightShader.SetMatrix4("viewMatrix", viewMatrix);
-	//GLuint groups = (clusterCount + localSize - 1) / localSize;
-	//glDispatchCompute(groups, 1, 1);
-
-	//glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 	CullLights();
 
@@ -282,10 +239,10 @@ void Renderer::Render(float width, float height)
 	gui->Render();
 }
 
-void Renderer::AddObject(const std::filesystem::path& modelPath)
+void Renderer::AddObject(const std::filesystem::path& modelPath, Shader& shader)
 {
 	auto newObject = std::make_unique<SceneObject>();
-	newObject->model.LoadModel(modelPath, mainShader);  // TODO: might eventually support changing shader
+	newObject->model.LoadModel(modelPath, shader);
 	newObject->transform.position = glm::vec3(0, 0, 0);
 
 	sceneObjects.emplace_back(std::move(newObject));
