@@ -73,7 +73,7 @@ void Application::Run()
 		CalculateDelta();
 		renderer.Render(width, height);
 
-		Camera::Camera::GetInstance()->ProcessKeyboard(window, deltaTime);
+		Camera::Camera::Get().ProcessKeyboard(window, deltaTime);
 
 		glfwSwapInterval(0);
 		glfwSwapBuffers(window);
