@@ -32,6 +32,12 @@ const float exposure = 0.3;
 const vec3 ambientColor = vec3(0.2);
 const vec3 sunColor = vec3(1.0, 0.9, 0.8);
 
+// cluster-grid
+uniform float zNear;
+uniform float zFar;
+uniform uvec3 gridSize; 
+uniform uvec2 screenDim;      
+
 layout(location = 0) uniform sampler2D albedoTexture;
 layout(binding = 0, std140) uniform MaterialUniforms {
 	vec4 baseColorFactor;
@@ -56,15 +62,28 @@ struct Light
 	vec4 position; // point/ spot/ area 
 	vec4 direction; // dir/ spot
 	vec4 cutoff; // spot. x - inner, y - outer 
-	vec4 attenuation; // x - constant, y - linear, z - quadratic
+	vec4 attenuation; // x - constant, y - linear, z - quadratic, w - radius
 	vec4 axisU; // area lights
 	vec4 axisV; // area lights
 };
 
+struct Cluster
+{
+	vec4 minPoint;
+	vec4 maxPoint;
+	uint count;
+	uint lightIndices[100];
+};
+
 layout(binding = 0, std430) buffer LightBuffer 
 {
+	Light lights[1024];
 	uint lightCount;
-	Light lights[];
+};
+
+layout(binding = 1, std430) restrict buffer clusterBuffer
+{
+	Cluster clusters[];
 };
 
 float rand(vec2 co) 
@@ -241,6 +260,19 @@ vec3 CalculateLighting(Light light, vec3 N, vec3 V, vec4 baseColor, float roughn
 	return result;
 }
 
+uint ComputeClusterIndex()
+{
+	// Z-Slice
+	float z = -fragPosView.z;
+	uint zTile = uint(clamp((log(z/zNear) / log(zFar/zNear)) * float(gridSize.z), 0.0, float(gridSize.z-1)));
+
+	// X/Y tiles
+	vec2 tileSize = vec2(screenDim) / vec2(gridSize.xy);
+	uvec2 xyTile = uvec2(gl_FragCoord.xy / tileSize);
+
+	return xyTile.x + xyTile.y * gridSize.x + zTile * (gridSize.x * gridSize.y);
+}
+
 void main()
 {
 	vec4 baseColor = material.baseColorFactor;
@@ -290,17 +322,32 @@ void main()
 	if ((material.flags & HAS_OCCLUSION) == HAS_OCCLUSION) {
 		ambientOcclusion = texture(occlusionTexture, transformUV(texCoord)).r;
 	}
-
+	
+	// Fetch Cluster
 	vec3 lighting = vec3(0.0);
-	for (uint i = 0u; i < lightCount; i++)
+	uint clusterId = ComputeClusterIndex();
+	Cluster c = clusters[clusterId];
+
+	// Loop over lights that intersect
+	for (uint i = 0u; i < c.count; i++)
 	{
-		lighting += CalculateLighting(lights[i], viewNormal, V, baseColor, roughness, metallic);
+		uint li = c.lightIndices[i];
+		Light l = lights[li];
+
+		lighting += CalculateLighting(l, viewNormal, V, baseColor, roughness, metallic);
 	}
 
+	// Add sun light seperate (Doesn't get culled)
 	Light sunLight;
 	sunLight.type = 0u;
+	sunLight._padding = vec3(0.0);
 	sunLight.color = vec4(sunColor, sunIntensity);
+	sunLight.position = vec4(0.0);
 	sunLight.direction = vec4(sunDirection, 0.0);
+	sunLight.cutoff = vec4(0.0);
+	sunLight.attenuation = vec4(0.0);
+	sunLight.axisU = vec4(0.0);
+	sunLight.axisV = vec4(0.0);
 
 	vec3 sunRadiance = sunColor * sunIntensity;
 	vec3 sunContribution = CalcDirectionalLight(sunLight, viewNormal, V, baseColor, roughness * 0.5 + 0.5, metallic); // Roughness changes causes it to be less sharp decreasing the specular highlight

@@ -1,4 +1,4 @@
-#include "Renderer.h"
+﻿#include "Renderer.h"
 #include "OpenGL/Model/GeometryData.h"
 #include "GUIHandler.h"
 #include "Utils.h"
@@ -36,6 +36,10 @@ void Renderer::Init()
 	// Init shaders, load models, setup buffers etc
 	skyboxShader.Load("shaders/skybox.vert", "shaders/skybox.frag");
 	mainShader.Load("shaders/shader.vert", "shaders/shader.frag");
+
+	SetupClusterSSBO();
+	clusterShader.Load("shaders/cluster.comp");
+	cullLightShader.Load("shaders/cullLight.comp");
 
 	// Load skybox textures
 	skyboxTexture = Utils::GenerateCubemapCompressed(skyboxFaces);
@@ -85,17 +89,11 @@ void Renderer::Init()
 	}
 
 	// Light objects
-	glGenBuffers(1, &lightSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
-	GLsizei bufferSize = sizeof(GLuint) + 12 + (sizeof(LightData) * maxLights);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lightSSBO);
-
 	LightData pointLight = {};
 	pointLight.type = 1;
 	pointLight.color = glm::vec4(1.0f, 0.0f, 0.0f, 5.0f);
 	pointLight.position = glm::vec4(10.0f, 4.0f, 0.0f, 1.0f);
-	pointLight.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 0.0f);
+	pointLight.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 10.0f);
 
 	LightData spotLight = {};
 	spotLight.type = 2;
@@ -103,7 +101,7 @@ void Renderer::Init()
 	spotLight.position = glm::vec4(5.0f, 4.0f, 0.0f, 1.0f);
 	spotLight.direction = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f);
 	spotLight.cutOff = glm::vec4(glm::cos(glm::radians(5.0f)), glm::cos(glm::radians(40.0f)), 0.0f, 0.0f);
-	spotLight.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 0.0f);
+	spotLight.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 5.0f);
 
 	LightData areaLight = {};
 	areaLight.type = 3;
@@ -111,10 +109,41 @@ void Renderer::Init()
 	areaLight.position = glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
 	areaLight.axisU = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
 	areaLight.axisV = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	areaLight.attenuation = glm::vec4(0.0f, 0.0f, 0.0f, 2.0f);
 
-	lightsWorld.push_back(pointLight);
-	lightsWorld.push_back(spotLight);
-	lightsWorld.push_back(areaLight);
+	//lightsWorld.push_back(pointLight);
+	//lightsWorld.push_back(spotLight);
+	//lightsWorld.push_back(areaLight);
+
+	for (int i = 0; i < 500; i++)
+	{
+		float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		float g = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		float b = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		glm::vec4 newCol = glm::vec4(r, g, b, 1.0f);
+
+		float x = -5.0f + static_cast<float>(rand()) / (RAND_MAX / (10.0f));
+		float y = 0.0f + static_cast<float>(rand()) / (RAND_MAX / (50.0f));
+		float z = -5.0f + static_cast<float>(rand()) / (RAND_MAX / (10.0f));
+		glm::vec4 newPosition = glm::vec4(x, y, z, 1.0f);
+
+		LightData manyPointLights = {};
+		manyPointLights.type = 1;
+		manyPointLights.color = newCol;
+		manyPointLights.position = newPosition;
+		manyPointLights.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 0.0f);
+
+		lightsWorld.emplace_back(manyPointLights);
+	}
+
+	glGenBuffers(1, &lightSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
+	GLsizei bufferSize = maxLights * sizeof(LightData) + sizeof(GLuint);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lightSSBO);
+
+	std::cout << sizeof(LightData) << std::endl;
+	std::cout << alignof(LightData) << std::endl;
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -129,6 +158,8 @@ void Renderer::Init()
 
 void Renderer::Render(float width, float height)
 {
+	fpsCounter.Update();
+
 	glClearColor(0.25f, 0.25f, 0.4f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -137,14 +168,16 @@ void Renderer::Render(float width, float height)
 	const float farPlane = 100.0f;
 
 	glm::mat4 model = glm::mat4(1.0f);
-	CameraMatrices camMatrices = Camera::GetInstance()->GetMVP(aspect, nearPlane, farPlane, model);
-	glm::mat4 viewMatrix = Camera::GetInstance()->GetViewMatrix();
+	CameraMatrices camMatrices = Camera::Get().GetCameraMatrix(model);
+	glm::mat4 viewMatrix = Camera::Get().GetView();
+	glm::mat4 projMatrix = Camera::Get().GetProjection();
+
+	Camera::Get().SetViewport(width, height);
+	Camera::Get().SetClippingPlanes(nearPlane, farPlane);
 
 	// Lights
 	// Transform world space to view space
 	lightCount = static_cast<GLuint>(lightsWorld.size());
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
-	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &lightCount);
 
 	lightsView = lightsWorld;
 	for (size_t i = 0; i < lightsView.size(); i++)
@@ -152,7 +185,31 @@ void Renderer::Render(float width, float height)
 		lightsView[i].position = viewMatrix * lightsWorld[i].position;
 		lightsView[i].direction = viewMatrix * glm::vec4(glm::vec3(lightsWorld[i].direction), 0.0f);
 	}
-	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, sizeof(LightData) * lightCount, lightsView.data());
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(LightData) * lightCount, lightsView.data());
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, maxLights * sizeof(LightData), sizeof(GLuint), &lightCount);
+
+	//clusterShader.Use();
+	//clusterShader.SetFloat("zNear", nearPlane);
+	//clusterShader.SetFloat("zFar", farPlane);
+	//clusterShader.SetVec3("gridSize", gridSizeX, gridSizeY, gridSizeZ);
+	//clusterShader.SetVec2("screenDim", (GLuint)width, (GLuint)height);
+	//glm::mat4 inverseProj = glm::inverse(projMatrix);
+	//clusterShader.SetMatrix4("inverseProj", inverseProj);
+	//glDispatchCompute(gridSizeX, gridSizeY, gridSizeZ);
+
+	//cullLightShader.Use();
+	//cullLightShader.SetMatrix4("viewMatrix", viewMatrix);
+	//GLuint groups = (clusterCount + localSize - 1) / localSize;
+	//glDispatchCompute(groups, 1, 1);
+
+	//glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+	CullLights();
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lightSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, clusterSSBO);
 
 	// gLTF object
 	mainShader.Use();
@@ -178,6 +235,11 @@ void Renderer::Render(float width, float height)
 
 	float environmentIntensity = glm::smoothstep(-0.866f, 0.866f, sunHeight);
 	environmentIntensity = glm::mix(0.02f, 1.0f, environmentIntensity);
+
+	mainShader.SetFloat("zNear", nearPlane);
+	mainShader.SetFloat("zFar", farPlane);
+	mainShader.SetVec3("gridSize", gridSizeX, gridSizeY, gridSizeZ);
+	mainShader.SetVec2("screenDim", (GLuint)width, (GLuint)height);
 
 	mainShader.SetVec3("sunDirection", sunDirView);
 	mainShader.SetFloat("sunIntensity", sunIntensity);
@@ -213,7 +275,8 @@ void Renderer::Render(float width, float height)
 
 	gui->NewFrame();
 	gui->BeginFrame("Test Window", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoDocking, ImVec2(854, 480));
-	ImGui::Text("Test!");
+	ImGui::Text("FPS: %.2f", fpsCounter.GetFPS());
+	ImGui::Text("Frame Time: %.4f ms", fpsCounter.GetFrameTime() * 1000.0f);
 	gui->EndFrame();
 
 	gui->Render();
@@ -226,4 +289,40 @@ void Renderer::AddObject(const std::filesystem::path& modelPath)
 	newObject->transform.position = glm::vec3(0, 0, 0);
 
 	sceneObjects.emplace_back(std::move(newObject));
+}
+
+void Renderer::SetupClusterSSBO()
+{
+	glGenBuffers(1, &clusterSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, clusterSSBO);
+
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Cluster) * clusterCount, nullptr, GL_STATIC_COPY);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, clusterSSBO);
+}
+
+void Renderer::CullLights()
+{
+	int width, height;
+	glfwGetFramebufferSize(window, &width, &height);
+	std::pair<float, float> clipping = Camera::Get().GetClippingPlanes();
+	glm::mat4 proj = Camera::Get().GetProjection();
+	glm::mat4 view = Camera::Get().GetView();
+	glm::mat4 inverseProj = glm::inverse(proj);
+
+	// Build AABBs
+	clusterShader.Use();
+	clusterShader.SetFloat("zNear", clipping.first);
+	clusterShader.SetFloat("zFar", clipping.second);
+	clusterShader.SetMatrix4("inverseProj", inverseProj);
+	clusterShader.SetVec3("gridSize", gridSizeX, gridSizeY, gridSizeZ);
+	clusterShader.SetVec2("screenDim", width, height);
+
+	clusterShader.Dispatch(gridSizeX, gridSizeY, gridSizeZ);
+
+	// Cull Lights
+	cullLightShader.Use();
+	cullLightShader.SetMatrix4("viewMatrix", view);
+
+	GLuint groups = (clusterCount + localSize - 1) / localSize;
+	cullLightShader.Dispatch(groups, 1, 1);
 }

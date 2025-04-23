@@ -45,6 +45,9 @@ public:
 	inline void SetInt(const std::string& name, int value) { glUniform1i(GetUniformLocation(name), value); }
 	inline void SetFloat(const std::string& name, float value) { glUniform1f(GetUniformLocation(name), (float)(value)); }
 
+	inline void SetVec2(const std::string& name, const glm::vec3& value) { glUniform2fv(GetUniformLocation(name), 1, &value[0]); }
+	inline void SetVec2(const std::string& name, float x, float y) { glUniform2f(GetUniformLocation(name), x, y); }
+
 	inline void SetVec3(const std::string& name, const glm::vec3& value) { glUniform3fv(GetUniformLocation(name), 1, &value[0]); }
 	inline void SetVec3(const std::string& name, float x, float y, float z) { glUniform3f(GetUniformLocation(name), x, y, z); }
 

@@ -1,0 +1,75 @@
+#version 460 core
+#define LOCALSIZE 128
+layout(local_size_x = LOCALSIZE, local_size_y = 1, local_size_z = 1) in;
+
+struct Light
+{
+	uint type; // 0 - Dir, 1 - Point, 2 - Spot, 3 - Area
+	vec3 _padding;
+
+	vec4 color; // w - intensity
+	vec4 position; // point/ spot/ area 
+	vec4 direction; // dir/ spot
+	vec4 cutoff; // spot. x - inner, y - outer 
+	vec4 attenuation; // x - constant, y - linear, z - quadratic, w - radius
+	vec4 axisU; // area lights
+	vec4 axisV; // area lights
+};
+
+struct Cluster
+{
+	vec4 minPoint;
+	vec4 maxPoint;
+	uint count;
+	uint lightIndices[100];
+};
+
+layout(binding = 0, std430) buffer LightBuffer 
+{
+	Light lights[1024];
+	uint lightCount;
+};
+
+layout(binding = 1, std430) restrict buffer clusterBuffer
+{
+	Cluster clusters[];
+};
+
+uniform mat4 viewMatrix;
+
+bool SphereAABBIntersection(vec3 center, float radius, vec3 aabbMin, vec3 aabbMax)
+{
+	vec3 closestPoint = clamp(center, aabbMin, aabbMax);
+	float distSq = dot(closestPoint - center, closestPoint - center);
+	return distSq <= radius * radius;
+}
+
+bool TestSphereAABB(uint i, Cluster c)
+{
+//	vec3 center = vec3(viewMatrix * lights[i].position);
+	vec3 center = lights[i].position.xyz;
+	float radius = lights[i].attenuation.w;
+
+	vec3 aabbMin = c.minPoint.xyz;
+	vec3 aabbMax = c.maxPoint.xyz;
+
+	return SphereAABBIntersection(center, radius, aabbMin, aabbMax);
+}
+
+void main()
+{
+	uint index = gl_WorkGroupID.x * LOCALSIZE + gl_LocalInvocationID.x;
+	Cluster cluster = clusters[index];
+
+	cluster.count = 0;
+
+	for (uint i = 0; i < lightCount; i++)
+	{
+		if (TestSphereAABB(i, cluster) && cluster.count < 100)
+		{
+			cluster.lightIndices[cluster.count] = i;
+			cluster.count++;
+		}
+	}
+	clusters[index] = cluster;
+}

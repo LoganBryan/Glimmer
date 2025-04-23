@@ -5,10 +5,11 @@
 class FPSCounter
 {
 public:
-	inline FPSCounter() : previous(std::chrono::system_clock::now()), frameCount(0), fps(0), delta{0.0f} {}
+	inline FPSCounter() : previous(std::chrono::system_clock::now()), frameCount(0), fps(0), delta{ 0.0f }, frameTime(0) {}
 
 	void Update();
 	inline double GetFPS() const { return fps; }
+	inline double GetFrameTime() const { return frameTime; }
 	inline double GetDelta() const { return delta.count(); }
 
 private:
@@ -16,5 +17,5 @@ private:
 	std::chrono::duration<double> delta;
 	int frameCount;
 	double fps;
+	double frameTime;
 };
-

@@ -1,21 +1,5 @@
 #include "Camera.h"
-
-
-Camera* instance = nullptr;
-std::mutex mtx;
-
-CameraMatrices Camera::GetMVP(float aspect, float nearPlane, float farPlane, const glm::mat4& model) const
-{
-	CameraMatrices matrices;
-
-	matrices.projection = glm::perspective(glm::radians(zoom), aspect, nearPlane, farPlane);
-	matrices.view = GetViewMatrix();
-	matrices.viewNormal = glm::mat4(glm::mat3(GetViewMatrix()));
-	matrices.model = model;
-	matrices.mvp = matrices.projection * matrices.view * matrices.model;
-
-	return matrices;
-}
+#include <algorithm>
 
 void Camera::ProcessKeyboard(GLFWwindow* window, float deltaTime)
 {
@@ -37,46 +21,39 @@ void Camera::ProcessKeyboard(GLFWwindow* window, float deltaTime)
 	{
 		position += glm::normalize(glm::cross(front, up)) * velocity;
 	}
+
+	RecomputeView();
 }
 
 void Camera::ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch)
 {
-	xOffset *= mouseSensitivity;
-	yOffset *= mouseSensitivity;
-
-	yaw += xOffset;
-	pitch += yOffset;
-
-	if (constrainPitch)
-	{
-		if (pitch > 89.0f)
-			pitch = 89.0f;
-		if (pitch < -89.0f)
-			pitch = -89.0f;
-	}
-
-	UpdateCameraVectors();
 }
 
-Camera::Camera() : position(0.0f, 0.0f, 3.0f), front(0.0f, 0.0f, -1.0f), up(0.0f, 1.0f, 0.0f), right(0.0f, 0.0f, 0.0f), worldUp(0.0f, 1.0f, 0.0f), yaw(-90.0f), pitch(0.0f), movementSpeed(2.5f), mouseSensitivity(0.1f), zoom(90.0f)
+void Camera::ProcessMouseScroll(float yOffset)
 {
-	cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-	
-	cameraDirection = glm::normalize(position - cameraTarget);
-	right = glm::normalize(glm::cross(up, cameraDirection));
-	up = glm::cross(cameraDirection, right);
 }
 
-void Camera::UpdateCameraVectors()
+Camera::Camera()
 {
-	glm::vec3 newFront;
+	RecomputeView();
+	RecomputeProjection();
+}
 
-	newFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	newFront.y = sin(glm::radians(pitch));
-	newFront.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	front = glm::normalize(newFront);
+void Camera::RecomputeView()
+{
+	glm::vec3 f;
+	f.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	f.y = sin(glm::radians(pitch));
+	f.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 
+	front = glm::normalize(f);
 	right = glm::normalize(glm::cross(front, worldUp));
 	up = glm::normalize(glm::cross(right, front));
+
+	view = glm::lookAt(position, position + front, up);
 }
 
+void Camera::RecomputeProjection()
+{
+	projection = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
+}

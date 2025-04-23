@@ -11,6 +11,8 @@ void FPSCounter::Update()
 	{
 		fps = frameCount / std::chrono::duration<double>(delta).count();
 
+		frameTime = 1.0 / fps;
+
 		frameCount = 0;
 		previous = now;
 	}

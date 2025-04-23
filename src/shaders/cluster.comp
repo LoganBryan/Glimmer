@@ -1,0 +1,65 @@
+#version 460 core
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+struct Cluster
+{
+	vec4 minPoint;
+	vec4 maxPoint;
+	uint count;
+	uint lightIndices[100];
+};
+
+layout(std430, binding = 1) restrict buffer clusterSSBO
+{
+	Cluster clusters[];
+};
+
+uniform float zNear;
+uniform float zFar;
+
+uniform mat4 inverseProj;
+uniform uvec3 gridSize;
+uniform uvec2 screenDim;
+
+vec3 screenToView(vec2 screenCoord)
+{
+	// norm screnCord to [-1, 1] then set NDC depth on near plane
+	vec4 ndc = vec4(screenCoord / screenDim * 2.0 - 1.0, -1.0, 1.0);
+
+	vec4 viewCoord = inverseProj * ndc;
+	viewCoord /= viewCoord.w;
+	return viewCoord.xyz;
+}
+
+vec3 LineIntersectWithZPlane(vec3 startPoint, vec3 endPoint, float zDist)
+{
+	vec3 dir = endPoint - startPoint;
+	vec3 norm = vec3(0.0, 0.0, -1.0);
+
+	float t = (zDist - dot(norm, startPoint)) / dot(norm, dir);
+	return startPoint + t * dir;
+}
+
+void main()
+{
+	uint tileIndex = gl_WorkGroupID.x + (gl_WorkGroupID.y * gridSize.x) + (gl_WorkGroupID.z * gridSize.x * gridSize.y);
+	vec2 tileSize = screenDim / gridSize.xy;
+
+	// Tile in screen space
+	vec2 minTileSS = gl_WorkGroupID.xy * tileSize;
+	vec2 maxTileSS = (gl_WorkGroupID.xy + 1) * tileSize;
+
+	vec3 minTile = screenToView(minTileSS);
+	vec3 maxTile = screenToView(maxTileSS);
+
+	float nearPlane = zNear * pow(zFar / zNear, gl_WorkGroupID.z / float(gridSize.z));
+	float farPlane = zNear * pow(zFar / zNear, (gl_WorkGroupID.z + 1) / float(gridSize.z));
+
+	vec3 minPointNear = LineIntersectWithZPlane(vec3(0, 0, 0), minTile, nearPlane);
+	vec3 minPointFar = LineIntersectWithZPlane(vec3(0, 0, 0), minTile, farPlane);
+	vec3 maxPointNear = LineIntersectWithZPlane(vec3(0, 0, 0), maxTile, nearPlane);
+	vec3 maxPointFar = LineIntersectWithZPlane(vec3(0, 0, 0), maxTile, farPlane);
+
+	clusters[tileIndex].minPoint = vec4(min(minPointNear, minPointFar), 0.0);
+	clusters[tileIndex].maxPoint = vec4(min(maxPointNear, maxPointFar), 0.0);
+}
