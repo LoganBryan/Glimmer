@@ -9,17 +9,38 @@ layout(location = 3) in vec4 aTangent;
 layout(location = 4) in uvec4 aJoints;
 layout(location = 5) in vec4 aWeights;
 
-uniform mat4 model;
+//uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
 uniform bool uHasSkinning;
+
+struct Transform
+{
+	vec3 position;
+	vec4 rotation;
+	vec3 scale;
+	float _pad;
+};
+
+struct SceneObject
+{
+	Transform transform;
+	uint materialIndex;
+	uint skinIndex;
+	uint flags;
+	uint _pad;
+};
 
 layout(std140, binding = 1) uniform JointMatrices
 {
 	mat4 jointMatrices[MAX_JOINTS];
 };
 
+layout(std430, binding = 2) readonly buffer InstanceBuffer
+{
+	SceneObject instances[];
+};
 out vec3 fragPosView;
 out vec2 texCoord;
 out vec3 normal;
@@ -29,8 +50,63 @@ out mat3 TBN;
 out vec3 N; // Normal in view space 
 out vec3 V; // View dir in view space 
 
+mat4 quatToMat4(vec4 q)
+{
+	float qx = q.x;
+    float qy = q.y;
+    float qz = q.z;
+    float qw = q.w;
+    
+    mat4 result = mat4(1.0);
+    
+    float qxx = qx * qx;
+    float qyy = qy * qy;
+    float qzz = qz * qz;
+    float qxz = qx * qz;
+    float qxy = qx * qy;
+    float qyz = qy * qz;
+    float qwx = qw * qx;
+    float qwy = qw * qy;
+    float qwz = qw * qz;
+    
+    result[0][0] = 1.0 - 2.0 * (qyy + qzz);
+    result[0][1] = 2.0 * (qxy - qwz);
+    result[0][2] = 2.0 * (qxz + qwy);
+    
+    result[1][0] = 2.0 * (qxy + qwz);
+    result[1][1] = 1.0 - 2.0 * (qxx + qzz);
+    result[1][2] = 2.0 * (qyz - qwx);
+    
+    result[2][0] = 2.0 * (qxz - qwy);
+    result[2][1] = 2.0 * (qyz + qwx);
+    result[2][2] = 1.0 - 2.0 * (qxx + qyy);
+    
+    return result;
+}
+
 void main()
 {
+	uint id = gl_InstanceID;
+	Transform t = instances[id].transform;
+
+	mat4 scaleMat = mat4(
+        vec4(t.scale.x, 0.0, 0.0, 0.0),
+        vec4(0.0, t.scale.y, 0.0, 0.0),
+        vec4(0.0, 0.0, t.scale.z, 0.0),
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+
+	mat4 rotMat = quatToMat4(t.rotation);
+
+    mat4 transMat = mat4(
+        vec4(1.0, 0.0, 0.0, 0.0),
+        vec4(0.0, 1.0, 0.0, 0.0),
+        vec4(0.0, 0.0, 1.0, 0.0),
+        vec4(t.position, 1.0)
+    );
+
+	mat4 M = transMat * rotMat * scaleMat;
+
 	mat4 skinMatrix = mat4(1.0);
 	bool useSkinning = uHasSkinning && any(greaterThan(aWeights, vec4(0.0)));
 	//gl_Position = viewProjMatrix * modelMatrix * vec4(position, 1.0);
@@ -44,38 +120,40 @@ void main()
 			aWeights.w * jointMatrices[aJoints.w];
 	}
 
-	vec4 worldPosition ;
+	vec4 worldPosition;
+	
+	if (useSkinning)
+		worldPosition = M * skinMatrix * vec4(aVertex, 1.0);
+	else
+		worldPosition = M * vec4(aVertex, 1.0);
 
 	// Modelview matrix
-	mat4 mvm = view * model;
+	mat4 mvm = view * M;
 
 	// Transform vertex position to view space
-	vec3 positionEye = vec3(mvm * vec4(aVertex, 1.0));
+	vec3 positionEye = vec3(mvm * (useSkinning ? skinMatrix * vec4(aVertex, 1.0) : vec4(aVertex, 1.0)));
 
 	// View-space normal
-	mat3 normalMatrix = transpose(inverse(mat3(model * skinMatrix)));
+	mat3 normalMatrix = transpose(inverse(mat3(M)));
+	if (useSkinning)
+	{
+		normalMatrix *= mat3(skinMatrix);
+	}
 
 	// View vector
 	V = normalize(-positionEye);
 
-	N = normalize(normalMatrix * aNormal);
-	vec3 T = normalize(normalMatrix * aTangent.xyz);
+	N = normalize(mat3(view) * normalMatrix * aNormal);
+	vec3 T = normalize(mat3(view) * normalMatrix * aTangent.xyz);
 	vec3 B = normalize(cross(N, T) * aTangent.w);
 
 	TBN = mat3(T, B, N);
 
 	texCoord = aTexCoord;
 
-	normal = mat3(transpose(inverse(model))) * aNormal;
-	tangent = vec4(mat3(transpose(inverse(model))) * vec3(aTangent.xyz), 1.0);
-
-	mat4 MVP = projection * view * model;
-
-	if (useSkinning)
-		worldPosition = skinMatrix * vec4(aVertex, 1.0);
-	else
-		worldPosition = vec4(aVertex, 1.0);
+	normal = normalMatrix * aNormal;
+	tangent = vec4(normalMatrix * aTangent.xyz, aTangent.w);
 
 	fragPosView = positionEye;
-	gl_Position = projection * view * model * worldPosition;
+	gl_Position = projection * view * worldPosition;
 }

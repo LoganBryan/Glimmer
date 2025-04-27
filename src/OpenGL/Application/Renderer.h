@@ -16,18 +16,22 @@
 
 #include "Shader.h"
 #include "ComputeShader.h"
-#include "OpenGL/Model/GltfLoader.h"
+//#include "OpenGL/Model/GltfLoader.h"
 #include "FPSCounter.h"
 
-struct SceneObject
-{
-	GltfLoader model;
-	Transform transform;
-	glm::vec3 grabOffset;
-	glm::quat grabRotationOffset;
-	bool isGrabbed = false;
-	int grabbedByHand = -1; // -1 none, 0 left, 1 right
-};
+#include <OpenGL/Model/glTF/ResourceCache.h>
+#include <OpenGL/Model/glTF/InstanceManager.h>
+#include <OpenGL/Model/glTF/SceneRenderer.h>
+
+//struct SceneObject
+//{
+//	GltfLoader model;
+//	Transform transform;
+//	glm::vec3 grabOffset;
+//	glm::quat grabRotationOffset;
+//	bool isGrabbed = false;
+//	int grabbedByHand = -1; // -1 none, 0 left, 1 right
+//};
 
 struct alignas(16) LightData
 {
@@ -64,7 +68,7 @@ public:
 	void Init();
 	void Render(float width, float height);
 
-	void AddObject(const std::filesystem::path& modelPath, Shader& shader);
+	//void AddObject(const std::filesystem::path& modelPath, Shader& shader);
 	//void UpdateGrabbedObject(int objectIndex, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& grabOffset);
 
 	// TODO: replace with a function to retrieve and update the closest object
@@ -77,7 +81,17 @@ private:
 	GLFWwindow* window;
 	FPSCounter fpsCounter;
 
-	std::vector<std::unique_ptr<SceneObject>> sceneObjects; // TODO: should update this to have multiple containers, grabbable objects, scene objects and player objects (hands, body etc)
+	std::shared_ptr<MeshGPU> meshGPU;
+	std::vector<GLuint> materialUBOs;
+	std::shared_ptr<Skin> skinHandle;
+
+	MaterialManager matManager;
+	SkinManager skinManager;
+	InstanceManager instanceManager;
+	SceneRenderer sceneRenderer;
+	std::vector<SceneObject> sceneObjs;
+
+	//std::vector<std::unique_ptr<SceneObject>> sceneObjects; // TODO: should update this to have multiple containers, grabbable objects, scene objects and player objects (hands, body etc)
 	std::vector<LightData> lightsWorld;
 	std::vector<LightData> lightsView;
 
@@ -93,6 +107,8 @@ private:
 	Shader mainShader;
 
 	float timeOfDay = 0.1f;
+
+	std::filesystem::path gltfFile;
 
 	const unsigned int localSize = 128;
 	const unsigned int gridSizeX = 12;

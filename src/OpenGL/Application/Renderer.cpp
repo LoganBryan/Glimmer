@@ -46,7 +46,7 @@ void Renderer::Init()
 
 	Viewer viewer;
 
-	auto gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.glb");
+	gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.glb");
 	auto leftGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_left_model.glb");
 	auto rightGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_right_model.glb");
 	auto duck = std::filesystem::path("assets/models/Duck/duck.glb");
@@ -69,24 +69,43 @@ void Renderer::Init()
 
 	// TODO: Should probably seperate scene setup from renderer, and then extend addobject function (to add a unique id, DisplayName, set transform matrix etc)
 	// Loading should also not be handled inside of renderer!
-	AddObject(gltfFile, mainShader);
-	AddObject(gltfFile, mainShader);
-	AddObject(gltfFile, mainShader);
-	AddObject(gltfFile, mainShader);
-	AddObject(gltfFile, mainShader);
-	AddObject(gltfFile, mainShader);
-	AddObject(gltfFile, mainShader);
-	AddObject(gltfFile, mainShader);
+	//AddObject(gltfFile, mainShader);
+	//AddObject(gltfFile, mainShader);
+	//AddObject(gltfFile, mainShader);
+	//AddObject(gltfFile, mainShader);
+	//AddObject(gltfFile, mainShader);
+	//AddObject(gltfFile, mainShader);
+	//AddObject(gltfFile, mainShader);
+	//AddObject(gltfFile, mainShader);
 
-	glm::vec3 lastPosition = glm::vec3(0.0f, 0.0f, 0.0f);
-	for (auto& obj : sceneObjects)
-	{
-		obj->transform.position = lastPosition;
-		obj->transform.rotation = glm::quat(1, 0, 0, 0);
-		obj->transform.scale = glm::vec3(1.0f);
+	// TODO: this should be in it's own function, these are only called once on creation then cached for later
+	auto& cache = ResourceCache::Get();
+	meshGPU = cache.GetOrLoadMesh(gltfFile);
+	materialUBOs = cache.GetOrLoadMaterials(gltfFile);
+	skinHandle = cache.GetOrLoadSkin(gltfFile);
 
-		lastPosition = glm::vec3(lastPosition.x + 2.0f, 0.0f, 0.0f);
-	}
+	matManager.BuildMaterials(*cache.parser.Parse(gltfFile));
+	skinManager.Load(*cache.parser.Parse(gltfFile));
+
+	SceneObject obj;
+	obj.meshPath = gltfFile.string();
+	obj.transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	obj.transform.rotation = glm::quat(1, 0, 0, 0);
+	obj.transform.scale = glm::vec3(1.0f);
+	sceneObjs.push_back(obj);
+
+	instanceManager.SetSceneObjects(sceneObjs);
+
+
+	//glm::vec3 lastPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+	//for (auto& obj : sceneObjs)
+	//{
+	//	obj->transform.position = lastPosition;
+	//	obj->transform.rotation = glm::quat(1, 0, 0, 0);
+	//	obj->transform.scale = glm::vec3(1.0f);
+
+	//	lastPosition = glm::vec3(lastPosition.x + 2.0f, 0.0f, 0.0f);
+	//}
 
 	for (int i = 0; i < 500; i++)
 	{
@@ -205,13 +224,30 @@ void Renderer::Render(float width, float height)
 	mainShader.SetMatrix4("projection", camMatrices.projection);
 	mainShader.SetMatrix4("view", camMatrices.view);
 
-	for (auto& obj : sceneObjects)
-	{
-		glm::mat4 model = obj->transform.GetMatrix();
+	//for (auto& obj : sceneObjects)
+	//{
+	//	glm::mat4 model = obj->transform.GetMatrix();
 
-		obj->model.DrawModel(mainShader, model);
-		obj->model.UpdateSkins(model);
-	}
+	//obj->model.DrawModel(mainShader, model);
+	//	obj->model.UpdateSkins(model);
+	//}
+
+	//for (auto& obj : sceneObjs)
+	//{
+		//glm::mat4 model = obj.transform.GetMatrix();
+		//mainShader.SetMatrix4("model", model);
+		////skinManager.Upload(obj.transform);
+
+		////sceneRenderer.Draw(mainShader, *meshGPU, matManager, skinManager, instanceManager);
+		//glBindVertexArray(meshGPU->vao);
+		//glBindBuffer(GL_DRAW_INDIRECT_BUFFER, meshGPU->indirectBuffer);
+		//glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, meshGPU->drawCount, 0);
+		//glBindVertexArray(0);
+
+	//}
+	std::vector<MeshGPU> meshes = { *meshGPU };
+
+	sceneRenderer.Draw(mainShader, meshes, matManager, skinManager, instanceManager);
 
 	// Skybox - Drawn last
 	glDepthFunc(GL_LEQUAL);
@@ -239,14 +275,14 @@ void Renderer::Render(float width, float height)
 	gui->Render();
 }
 
-void Renderer::AddObject(const std::filesystem::path& modelPath, Shader& shader)
-{
-	auto newObject = std::make_unique<SceneObject>();
-	newObject->model.LoadModel(modelPath, shader);
-	newObject->transform.position = glm::vec3(0, 0, 0);
-
-	sceneObjects.emplace_back(std::move(newObject));
-}
+//void Renderer::AddObject(const std::filesystem::path& modelPath, Shader& shader)
+//{
+//	auto newObject = std::make_unique<SceneObject>();
+//	newObject->model.LoadModel(modelPath, shader);
+//	newObject->transform.position = glm::vec3(0, 0, 0);
+//
+//	sceneObjects.emplace_back(std::move(newObject));
+//}
 
 void Renderer::SetupClusterSSBO()
 {

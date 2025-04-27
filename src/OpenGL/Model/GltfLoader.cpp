@@ -366,6 +366,7 @@ bool GltfLoader::LoadMeshData(fastgltf::Mesh& mesh)
 		}
 
 		auto texCoordAttr = std::string("TEXCOORD_") + std::to_string(baseColorTexIndex);
+		std::cout << texCoordAttr << std::endl;
 		if (const auto* texCoord = it->findAttribute(texCoordAttr); texCoord != it->attributes.end())
 		{
 			// Tex-Coord
