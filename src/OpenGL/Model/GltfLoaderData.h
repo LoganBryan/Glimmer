@@ -147,3 +147,23 @@ struct Transform
 		return trans * rot * sca;
 	}
 };
+
+struct TransformGPU
+{
+	glm::vec3 position;
+	float _pad1;
+	glm::vec4 rotation;
+	glm::vec3 scale;
+	float _pad2;
+};
+
+struct SceneObjectGPU
+{
+	TransformGPU instanceTransform;
+	glm::mat4 nodeTransform;
+
+	uint32_t materialIndex;
+	uint32_t skinIndex;
+	uint32_t flags;
+	uint32_t _pad;
+};

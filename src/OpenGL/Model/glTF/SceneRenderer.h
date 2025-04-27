@@ -9,6 +9,18 @@
 class SceneRenderer
 {
 public:
-	void Draw(Shader& shader, const std::vector<MeshGPU>& meshes, const MaterialManager& mats, const SkinManager& skins, const InstanceManager& instances);
+    SceneRenderer() {};
+    ~SceneRenderer()
+    {
+        if (mDynamicIndirectBuffer != 0)
+            glDeleteBuffers(1, &mDynamicIndirectBuffer);
+    }
+
+    void Draw(Shader& shader,const InstanceManager& instances, const ResourceCache& cache, const MaterialManager& mats, const SkinManager& skins);
+
+private:
+    GLuint mDynamicIndirectBuffer = 0;
+    GLsizeiptr mDynamicIndirectBufferSize = 0;
+    std::vector<IndirectDrawCommand> mCommandBuffer;
 };
 

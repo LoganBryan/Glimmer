@@ -1,6 +1,6 @@
 #include "ResourceCache.h"
 
-std::shared_ptr<MeshGPU> ResourceCache::GetOrLoadMesh(const std::filesystem::path& path)
+std::shared_ptr<std::vector<MeshGPU>> ResourceCache::GetOrLoadMeshes(const std::filesystem::path& path)
 {
     auto key = path.string();
     auto it = meshMap.find(key);
@@ -13,9 +13,9 @@ std::shared_ptr<MeshGPU> ResourceCache::GetOrLoadMesh(const std::filesystem::pat
     const auto& asset = assetOpt.value();
 
     auto gpuList = uploader.UploadMeshes(asset);
-    auto meshPtr = std::make_shared<MeshGPU>(gpuList.front());
-    meshMap[key] = meshPtr;
-    return meshPtr;
+    auto meshesPtr = std::make_shared<std::vector<MeshGPU>>(std::move(gpuList));
+    meshMap[key] = meshesPtr;
+    return meshesPtr;
 }
 
 GLuint ResourceCache::GetOrLoadTexture(const std::filesystem::path& path)

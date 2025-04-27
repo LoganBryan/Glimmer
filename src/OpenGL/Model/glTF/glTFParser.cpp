@@ -3,8 +3,6 @@
 
 std::optional<fastgltf::Asset> glTFParser::Parse(const std::filesystem::path& p)
 {
-    wprintf(L"[glTFParser] Parsing %s...\n", p.wstring().c_str());
-
     auto mappedFile = fastgltf::MappedGltfFile::FromPath(p);
     if (!mappedFile)
     {

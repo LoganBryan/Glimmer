@@ -81,7 +81,7 @@ private:
 	GLFWwindow* window;
 	FPSCounter fpsCounter;
 
-	std::shared_ptr<MeshGPU> meshGPU;
+	std::shared_ptr<std::vector<MeshGPU>> meshGPU;
 	std::vector<GLuint> materialUBOs;
 	std::shared_ptr<Skin> skinHandle;
 

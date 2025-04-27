@@ -25,7 +25,8 @@ struct Transform
 
 struct SceneObject
 {
-	Transform transform;
+	Transform instanceTransform;
+	mat4 nodeTransform;  
 	uint materialIndex;
 	uint skinIndex;
 	uint flags;
@@ -40,7 +41,7 @@ layout(std140, binding = 1) uniform JointMatrices
 layout(std430, binding = 2) readonly buffer InstanceBuffer
 {
 	SceneObject instances[];
-};
+} instanceData;
 out vec3 fragPosView;
 out vec2 texCoord;
 out vec3 normal;
@@ -86,26 +87,31 @@ mat4 quatToMat4(vec4 q)
 
 void main()
 {
-	uint id = gl_InstanceID;
-	Transform t = instances[id].transform;
+	uint id = gl_BaseInstance + gl_InstanceID;
+	SceneObject currentInst = instanceData.instances[id];
 
-	mat4 scaleMat = mat4(
-        vec4(t.scale.x, 0.0, 0.0, 0.0),
-        vec4(0.0, t.scale.y, 0.0, 0.0),
-        vec4(0.0, 0.0, t.scale.z, 0.0),
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
+	mat4 M = currentInst.nodeTransform;
 
-	mat4 rotMat = quatToMat4(t.rotation);
-
-    mat4 transMat = mat4(
-        vec4(1.0, 0.0, 0.0, 0.0),
-        vec4(0.0, 1.0, 0.0, 0.0),
-        vec4(0.0, 0.0, 1.0, 0.0),
-        vec4(t.position, 1.0)
-    );
-
-	mat4 M = transMat * rotMat * scaleMat;
+//	Transform dTransform = currentInst.instanceTransform;
+//	mat4 scaleMat = mat4(
+//        vec4(dTransform.scale.x, 0.0, 0.0, 0.0),
+//        vec4(0.0, dTransform.scale.y, 0.0, 0.0),
+//        vec4(0.0, 0.0, dTransform.scale.z, 0.0),
+//        vec4(0.0, 0.0, 0.0, 1.0)
+//    );
+//
+//	mat4 rotMat = quatToMat4(dTransform.rotation);
+//
+//    mat4 transMat = mat4(
+//        vec4(1.0, 0.0, 0.0, 0.0),
+//        vec4(0.0, 1.0, 0.0, 0.0),
+//        vec4(0.0, 0.0, 1.0, 0.0),
+//        vec4(dTransform.position, 1.0)
+//    );
+//
+//	mat4 instMat = transMat * rotMat * scaleMat;
+//	mat4 nodeMat = currentInst.nodeTransform;
+//	mat4 M = instMat * nodeMat;
 
 	mat4 skinMatrix = mat4(1.0);
 	bool useSkinning = uHasSkinning && any(greaterThan(aWeights, vec4(0.0)));

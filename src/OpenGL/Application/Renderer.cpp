@@ -80,22 +80,37 @@ void Renderer::Init()
 
 	// TODO: this should be in it's own function, these are only called once on creation then cached for later
 	auto& cache = ResourceCache::Get();
-	meshGPU = cache.GetOrLoadMesh(gltfFile);
-	materialUBOs = cache.GetOrLoadMaterials(gltfFile);
-	skinHandle = cache.GetOrLoadSkin(gltfFile);
 
-	matManager.BuildMaterials(*cache.parser.Parse(gltfFile));
-	skinManager.Load(*cache.parser.Parse(gltfFile));
+	glm::vec3 start = glm::vec3(0.0f);
 
-	SceneObject obj;
-	obj.meshPath = gltfFile.string();
-	obj.transform.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	obj.transform.rotation = glm::quat(1, 0, 0, 0);
-	obj.transform.scale = glm::vec3(1.0f);
-	sceneObjs.push_back(obj);
+	for (int i = 0; i < 30; i++)
+	{
+		SceneObject sceneObj;
+		sceneObj.meshPath = gltfFile.string();
+		sceneObj.transform.position = start;
+		sceneObj.transform.rotation = glm::quat(1, 0, 0, 0);
+		sceneObj.transform.scale = glm::vec3(1.0f);
+		sceneObjs.push_back(sceneObj);
+
+		start += glm::vec3(2.0f, 0.0f, 0.0f);
+	}
+
+	std::sort(sceneObjs.begin(), sceneObjs.end(), [](const SceneObject& a, const SceneObject& b)
+		{
+			return a.meshPath < b.meshPath;
+		});
+
+	for (const auto& obj : sceneObjs)
+	{
+		meshGPU = cache.GetOrLoadMeshes(obj.meshPath);
+		materialUBOs = cache.GetOrLoadMaterials(obj.meshPath);
+		skinHandle = cache.GetOrLoadSkin(obj.meshPath);
+
+		matManager.BuildMaterials(*cache.parser.Parse(obj.meshPath));
+		skinManager.Load(*cache.parser.Parse(obj.meshPath));
+	}
 
 	instanceManager.SetSceneObjects(sceneObjs);
-
 
 	//glm::vec3 lastPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 	//for (auto& obj : sceneObjs)
@@ -245,9 +260,12 @@ void Renderer::Render(float width, float height)
 		//glBindVertexArray(0);
 
 	//}
-	std::vector<MeshGPU> meshes = { *meshGPU };
+	//std::vector<MeshGPU> meshes = { *meshGPU };
 
-	sceneRenderer.Draw(mainShader, meshes, matManager, skinManager, instanceManager);
+	//sceneRenderer.Draw(mainShader, meshes, matManager, skinManager, instanceManager);
+
+	auto& cache = ResourceCache::Get();
+	sceneRenderer.Draw(mainShader, instanceManager, cache, matManager, skinManager);
 
 	// Skybox - Drawn last
 	glDepthFunc(GL_LEQUAL);
