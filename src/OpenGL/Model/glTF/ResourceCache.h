@@ -29,29 +29,29 @@ public:
 	ResourceCache& operator=(ResourceCache&&) = delete;
 
 	std::shared_ptr<std::vector<MeshGPU>> GetOrLoadMeshes(const std::filesystem::path& path);
-	GLuint GetOrLoadTexture(const std::filesystem::path& path);
-	std::vector<GLuint> GetOrLoadMaterials(const std::filesystem::path& path);
+	size_t LoadMaterialsFromAsset(const std::filesystem::path& path);
 	std::shared_ptr<Skin> GetOrLoadSkin(const std::filesystem::path& path);
 
+	std::shared_ptr<fastgltf::Asset> GetParsedAsset(const std::filesystem::path& path);
 	inline const std::vector<MeshGPU>* GetMeshesPtr(const std::string& key) const
 	{
-		auto it = meshMap.find(key);
-		return (it != meshMap.end()) ? it->second.get() : nullptr;
+		auto it = mMeshMap.find(key);
+		return (it != mMeshMap.end()) ? it->second.get() : nullptr;
 	}
 
 	void Clear();
 	glTFParser parser;
-
-private:
-
-	MeshUploader uploader;
 	TextureManager texManager;
 	MaterialManager matManager;
 	SkinManager skinManager;
 
-	std::unordered_map<std::string, std::shared_ptr<std::vector<MeshGPU>>> meshMap;
-	std::unordered_map<std::string, GLuint> textureMap;
-	std::unordered_map<std::string, std::vector<GLuint>> materialsUBOsMap;
-	std::unordered_map<std::string, std::shared_ptr<Skin>> skinMap;
+private:
+
+	MeshUploader uploader;
+
+	std::unordered_map<std::string, std::shared_ptr<fastgltf::Asset>> mParsedAssetCache;
+
+	std::unordered_map<std::string, std::shared_ptr<std::vector<MeshGPU>>> mMeshMap;
+	std::unordered_map<std::string, std::shared_ptr<Skin>> mSkinMap;
 };
 

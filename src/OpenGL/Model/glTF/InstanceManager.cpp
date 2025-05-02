@@ -2,7 +2,6 @@
 
 void InstanceManager::SetSceneObjects(const std::vector<SceneObject>& objs)
 {
-	mObjects = objs;
 	objectCount = objs.size();
 
 	mGpuObjects.clear();
@@ -19,14 +18,30 @@ void InstanceManager::SetSceneObjects(const std::vector<SceneObject>& objs)
 	}
 
 	mGpuObjects.reserve(objectCount);
+	ResourceCache& cache = ResourceCache::Get();
+
 	std::string currentMeshPath = "";
 	uint32_t currentBaseInstance = 0;
+	size_t currentBaseMaterialIndex = 0;
 
 	for (const auto& obj : objs)
 	{
 		if (mMeshGroups.empty() || obj.meshPath != currentMeshPath)
 		{
 			currentMeshPath = obj.meshPath;
+
+			try
+			{
+				currentBaseMaterialIndex = cache.LoadMaterialsFromAsset(currentMeshPath);
+			}
+			catch (const std::runtime_error& e)
+			{
+				std::cerr << "[InstanceManager] Error! Loading materials for " << currentMeshPath << "\n What: " << e.what() << std::endl;
+				currentBaseMaterialIndex = 0;
+			}
+
+			// TODO: Skin handling
+
 			mMeshGroups.push_back({ currentMeshPath, currentBaseInstance, 0 });
 		}
 
@@ -38,7 +53,7 @@ void InstanceManager::SetSceneObjects(const std::vector<SceneObject>& objs)
 		gpuObj.nodeTransform = obj.transform.GetMatrix();
 
 		// TODO: TEMP! This needs to be set correctly!
-		gpuObj.materialIndex = 0;
+		gpuObj.materialIndex = static_cast<uint32_t>(currentBaseMaterialIndex + obj.gltfMaterialIndex);  
 		gpuObj.skinIndex = 0;
 		gpuObj.flags = 0;
 
@@ -51,7 +66,13 @@ void InstanceManager::SetSceneObjects(const std::vector<SceneObject>& objs)
 	if (instanceSSBO == 0)
 		glCreateBuffers(1, &instanceSSBO);
 
-	glNamedBufferStorage(instanceSSBO, mGpuObjects.size() * sizeof(SceneObjectGPU), mGpuObjects.data(), GL_DYNAMIC_STORAGE_BIT);
+	if (!mGpuObjects.empty())
+		glNamedBufferStorage(instanceSSBO, mGpuObjects.size() * sizeof(SceneObjectGPU), mGpuObjects.data(), GL_DYNAMIC_STORAGE_BIT);
+	else if (instanceSSBO != 0)
+	{
+		glDeleteBuffers(1, &instanceSSBO);
+		instanceSSBO = 0;
+	}
 }
 
 void InstanceManager::CullingCompute(const Camera& cam)

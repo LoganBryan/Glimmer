@@ -48,6 +48,7 @@ void Renderer::Init()
 
 	gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.glb");
 	auto leftGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_left_model.glb");
+	auto flight = std::filesystem::path("assets/models/flightHelm/flight.glb");
 	auto rightGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_right_model.glb");
 	auto duck = std::filesystem::path("assets/models/Duck/duck.glb");
 	auto cesiumMan = std::filesystem::path("assets/models/man/CesiumMan.glb");
@@ -67,29 +68,139 @@ void Renderer::Init()
 	skyboxShader.Use();
 	skyboxShader.SetInt("skybox", 0);
 
-	// TODO: Should probably seperate scene setup from renderer, and then extend addobject function (to add a unique id, DisplayName, set transform matrix etc)
-	// Loading should also not be handled inside of renderer!
-	//AddObject(gltfFile, mainShader);
-	//AddObject(gltfFile, mainShader);
-	//AddObject(gltfFile, mainShader);
-	//AddObject(gltfFile, mainShader);
-	//AddObject(gltfFile, mainShader);
-	//AddObject(gltfFile, mainShader);
-	//AddObject(gltfFile, mainShader);
-	//AddObject(gltfFile, mainShader);
-
 	// TODO: this should be in it's own function, these are only called once on creation then cached for later
 	auto& cache = ResourceCache::Get();
 
+	std::shared_ptr<fastgltf::Asset> assetPtr = nullptr;
+	size_t firstPrimMatIndex = 0;
+	try
+	{
+		cache.GetOrLoadMeshes(gltfFile);
+		cache.LoadMaterialsFromAsset(gltfFile);
+
+		assetPtr = cache.GetParsedAsset(gltfFile);
+		if (assetPtr && !assetPtr->meshes.empty() && !assetPtr->meshes[0].primitives.empty())
+		{
+			firstPrimMatIndex = assetPtr->meshes[0].primitives[0].materialIndex.value_or(0);
+		}
+		else
+		{
+			std::cerr << "Warning! Could not determine material index from glTF: " << gltfFile << ". Using default!" << std::endl;
+			firstPrimMatIndex = 0;
+		}
+
+		// TODO: skin loading here
+	}
+	catch (const std::runtime_error& e)
+	{
+		std::cerr << "Error pre loading resources for " << gltfFile << "\n what: " << e.what() << std::endl;
+		return;
+	}
+
+	std::shared_ptr<fastgltf::Asset> assetPtrFlight = nullptr;
+	size_t firstPrimMatIndexFlight = 0;
+	try
+	{
+		cache.GetOrLoadMeshes(leftGlove);
+		cache.LoadMaterialsFromAsset(leftGlove);
+
+		assetPtrFlight = cache.GetParsedAsset(leftGlove);
+		if (assetPtrFlight && !assetPtrFlight->meshes.empty() && !assetPtrFlight->meshes[0].primitives.empty())
+		{
+			firstPrimMatIndexFlight = assetPtrFlight->meshes[0].primitives[0].materialIndex.value_or(0);
+		}
+		else
+		{
+			std::cerr << "Warning! Could not determine material index from glTF: " << leftGlove << ". Using default!" << std::endl;
+			firstPrimMatIndexFlight = 0;
+		}
+
+		// TODO: skin loading here
+	}
+	catch (const std::runtime_error& e)
+	{
+		std::cerr << "Error pre loading resources for " << leftGlove << "\n what: " << e.what() << std::endl;
+		return;
+	}
+
+	glm::mat4 nodeTransform = glm::mat4(1.0f);
+
+	if (!assetPtr->nodes.empty())
+	{
+		auto& node = assetPtr->nodes[0];
+
+		nodeTransform = std::visit([](auto&& arg) -> glm::mat4
+			{
+				using T = std::decay_t<decltype(arg)>;
+
+				if constexpr (std::is_same_v<T, fastgltf::math::fmat4x4>)
+				{
+					return glm::make_mat4(arg.data());
+				}
+				else if constexpr (std::is_same_v<T, fastgltf::TRS>)
+				{
+					glm::mat4 transMat = glm::translate(glm::mat4(1.0f), glm::make_vec3(arg.translation.data()));
+					glm::quat rotQuat = glm::make_quat(arg.rotation.data());
+					glm::mat4 rotMat = glm::mat4_cast(rotQuat);
+					glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), glm::make_vec3(arg.scale.data()));
+
+					return transMat * rotMat * scaleMat;
+				}
+				else
+				{
+					return glm::mat4(1.0f);
+				}
+			}, node.transform);
+	}
+
 	glm::vec3 start = glm::vec3(0.0f);
 
-	for (int i = 0; i < 30; i++)
+	for (int i = 0; i < 50; i++)
 	{
 		SceneObject sceneObj;
 		sceneObj.meshPath = gltfFile.string();
+
+		glm::mat4 instTrans = glm::translate(glm::mat4(1.0f), start);
+		glm::mat4 instRot = glm::mat4_cast(glm::quat(1, 0, 0, 0));
+		glm::mat4 instScale = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
+		glm::mat4 instMat = instTrans * instRot * instScale;
+
+		glm::mat4 finalMatrix = instMat * nodeTransform;
+
+		// TODO: should eventually update transform to support setting matrix so i don't have to do this
+		glm::vec3 decompScale;
+		glm::quat decompRot;
+		glm::vec3 decompPos;
+		glm::vec3 skew;
+		glm::vec4 perspective;
+		glm::decompose(finalMatrix, decompScale, decompRot, decompPos, skew, perspective);
+
+		sceneObj.transform.position = decompPos;
+		sceneObj.transform.rotation = decompRot;
+		sceneObj.transform.scale = decompScale;
+
+		sceneObj.gltfMaterialIndex = firstPrimMatIndex;
+
+		sceneObjs.push_back(sceneObj);
+
+		start += glm::vec3(2.0f, 0.0f, 0.0f);
+	}
+
+	//std::sort(sceneObjs.begin(), sceneObjs.end(), [](const SceneObject& a, const SceneObject& b)
+	//	{
+	//		return a.meshPath < b.meshPath;
+	//	});
+
+	for (int i = 0; i < 50; i++)
+	{
+		SceneObject sceneObj;
+		sceneObj.meshPath = leftGlove.string();
 		sceneObj.transform.position = start;
 		sceneObj.transform.rotation = glm::quat(1, 0, 0, 0);
 		sceneObj.transform.scale = glm::vec3(1.0f);
+
+		sceneObj.gltfMaterialIndex = firstPrimMatIndexFlight;
+
 		sceneObjs.push_back(sceneObj);
 
 		start += glm::vec3(2.0f, 0.0f, 0.0f);
@@ -100,48 +211,45 @@ void Renderer::Init()
 			return a.meshPath < b.meshPath;
 		});
 
-	for (const auto& obj : sceneObjs)
-	{
-		meshGPU = cache.GetOrLoadMeshes(obj.meshPath);
-		materialUBOs = cache.GetOrLoadMaterials(obj.meshPath);
-		skinHandle = cache.GetOrLoadSkin(obj.meshPath);
-
-		matManager.BuildMaterials(*cache.parser.Parse(obj.meshPath));
-		skinManager.Load(*cache.parser.Parse(obj.meshPath));
-	}
-
 	instanceManager.SetSceneObjects(sceneObjs);
 
-	//glm::vec3 lastPosition = glm::vec3(0.0f, 0.0f, 0.0f);
-	//for (auto& obj : sceneObjs)
+
+	mainShader.Use();
+
+	viewer.uvOffsetUniform = glGetUniformLocation(mainShader.GetID(), "uvOffset");
+	viewer.uvScaleUniform = glGetUniformLocation(mainShader.GetID(), "uvScale");
+	viewer.uvRotationUniform = glGetUniformLocation(mainShader.GetID(), "uvRotation");
+
+	glUniform2f(viewer.uvOffsetUniform, 0, 0);
+	glUniform2f(viewer.uvScaleUniform, 1.0f, 1.0f);
+	glUniform1f(viewer.uvRotationUniform, 0);
+
+	uint64_t placeholderHandle = cache.texManager.GetPlaceholderHandle();
+	glm::uvec2 placeholder_uvec2;
+	placeholder_uvec2.x = static_cast<uint32_t>(placeholderHandle & 0xFFFFFFFFULL);
+	placeholder_uvec2.y = static_cast<uint32_t>(placeholderHandle >> 32);
+	glUniform2ui(glGetUniformLocation(mainShader.GetID(), "u_placeholderTextureHandle"), placeholder_uvec2.x, placeholder_uvec2.y);
+
+	//for (int i = 0; i < 500; i++)
 	//{
-	//	obj->transform.position = lastPosition;
-	//	obj->transform.rotation = glm::quat(1, 0, 0, 0);
-	//	obj->transform.scale = glm::vec3(1.0f);
+	//	float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	//	float g = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	//	float b = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	//	glm::vec4 newCol = glm::vec4(r, g, b, 1.0f);
 
-	//	lastPosition = glm::vec3(lastPosition.x + 2.0f, 0.0f, 0.0f);
+	//	float x = -5.0f + static_cast<float>(rand()) / (RAND_MAX / (10.0f));
+	//	float y = 0.0f + static_cast<float>(rand()) / (RAND_MAX / (50.0f));
+	//	float z = -5.0f + static_cast<float>(rand()) / (RAND_MAX / (10.0f));
+	//	glm::vec4 newPosition = glm::vec4(x, y, z, 1.0f);
+
+	//	LightData manyPointLights = {};
+	//	manyPointLights.type = 1;
+	//	manyPointLights.color = newCol;
+	//	manyPointLights.position = newPosition;
+	//	manyPointLights.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 0.0f);
+
+	//	lightsWorld.emplace_back(manyPointLights);
 	//}
-
-	for (int i = 0; i < 500; i++)
-	{
-		float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-		float g = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-		float b = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-		glm::vec4 newCol = glm::vec4(r, g, b, 1.0f);
-
-		float x = -5.0f + static_cast<float>(rand()) / (RAND_MAX / (10.0f));
-		float y = 0.0f + static_cast<float>(rand()) / (RAND_MAX / (50.0f));
-		float z = -5.0f + static_cast<float>(rand()) / (RAND_MAX / (10.0f));
-		glm::vec4 newPosition = glm::vec4(x, y, z, 1.0f);
-
-		LightData manyPointLights = {};
-		manyPointLights.type = 1;
-		manyPointLights.color = newCol;
-		manyPointLights.position = newPosition;
-		manyPointLights.attenuation = glm::vec4(1.0f, 0.007f, 0.0002f, 0.0f);
-
-		lightsWorld.emplace_back(manyPointLights);
-	}
 
 	glGenBuffers(1, &lightSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightSSBO);
@@ -234,38 +342,13 @@ void Renderer::Render(float width, float height)
 
 	mainShader.SetVec3("sunDirection", sunDirView);
 	mainShader.SetFloat("sunIntensity", sunIntensity);
-	mainShader.SetFloat("environmentIntensity", environmentIntensity);
+	mainShader.SetFloat("environmentIntensity", 0.0);
 
 	mainShader.SetMatrix4("projection", camMatrices.projection);
 	mainShader.SetMatrix4("view", camMatrices.view);
 
-	//for (auto& obj : sceneObjects)
-	//{
-	//	glm::mat4 model = obj->transform.GetMatrix();
-
-	//obj->model.DrawModel(mainShader, model);
-	//	obj->model.UpdateSkins(model);
-	//}
-
-	//for (auto& obj : sceneObjs)
-	//{
-		//glm::mat4 model = obj.transform.GetMatrix();
-		//mainShader.SetMatrix4("model", model);
-		////skinManager.Upload(obj.transform);
-
-		////sceneRenderer.Draw(mainShader, *meshGPU, matManager, skinManager, instanceManager);
-		//glBindVertexArray(meshGPU->vao);
-		//glBindBuffer(GL_DRAW_INDIRECT_BUFFER, meshGPU->indirectBuffer);
-		//glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, meshGPU->drawCount, 0);
-		//glBindVertexArray(0);
-
-	//}
-	//std::vector<MeshGPU> meshes = { *meshGPU };
-
-	//sceneRenderer.Draw(mainShader, meshes, matManager, skinManager, instanceManager);
-
 	auto& cache = ResourceCache::Get();
-	sceneRenderer.Draw(mainShader, instanceManager, cache, matManager, skinManager);
+	sceneRenderer.Draw(mainShader, instanceManager, cache, cache.matManager, cache.skinManager, skyboxTexture);
 
 	// Skybox - Drawn last
 	glDepthFunc(GL_LEQUAL);
@@ -292,15 +375,6 @@ void Renderer::Render(float width, float height)
 
 	gui->Render();
 }
-
-//void Renderer::AddObject(const std::filesystem::path& modelPath, Shader& shader)
-//{
-//	auto newObject = std::make_unique<SceneObject>();
-//	newObject->model.LoadModel(modelPath, shader);
-//	newObject->transform.position = glm::vec3(0, 0, 0);
-//
-//	sceneObjects.emplace_back(std::move(newObject));
-//}
 
 void Renderer::SetupClusterSSBO()
 {

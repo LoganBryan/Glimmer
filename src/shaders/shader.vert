@@ -51,6 +51,8 @@ out mat3 TBN;
 out vec3 N; // Normal in view space 
 out vec3 V; // View dir in view space 
 
+flat out uint MaterialIndex;
+
 mat4 quatToMat4(vec4 q)
 {
 	float qx = q.x;
@@ -90,32 +92,12 @@ void main()
 	uint id = gl_BaseInstance + gl_InstanceID;
 	SceneObject currentInst = instanceData.instances[id];
 
-	mat4 M = currentInst.nodeTransform;
+	MaterialIndex = currentInst.materialIndex;
 
-//	Transform dTransform = currentInst.instanceTransform;
-//	mat4 scaleMat = mat4(
-//        vec4(dTransform.scale.x, 0.0, 0.0, 0.0),
-//        vec4(0.0, dTransform.scale.y, 0.0, 0.0),
-//        vec4(0.0, 0.0, dTransform.scale.z, 0.0),
-//        vec4(0.0, 0.0, 0.0, 1.0)
-//    );
-//
-//	mat4 rotMat = quatToMat4(dTransform.rotation);
-//
-//    mat4 transMat = mat4(
-//        vec4(1.0, 0.0, 0.0, 0.0),
-//        vec4(0.0, 1.0, 0.0, 0.0),
-//        vec4(0.0, 0.0, 1.0, 0.0),
-//        vec4(dTransform.position, 1.0)
-//    );
-//
-//	mat4 instMat = transMat * rotMat * scaleMat;
-//	mat4 nodeMat = currentInst.nodeTransform;
-//	mat4 M = instMat * nodeMat;
+	mat4 M = currentInst.nodeTransform;
 
 	mat4 skinMatrix = mat4(1.0);
 	bool useSkinning = uHasSkinning && any(greaterThan(aWeights, vec4(0.0)));
-	//gl_Position = viewProjMatrix * modelMatrix * vec4(position, 1.0);
 
 	if (useSkinning) 
 	{

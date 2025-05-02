@@ -1,14 +1,52 @@
 #include "SceneRenderer.h"
 
-void SceneRenderer::Draw(Shader& shader, const InstanceManager& instances, const ResourceCache& cache, const MaterialManager& mats, const SkinManager& skins)
+void SceneRenderer::Draw(Shader& shader, const InstanceManager& instances, ResourceCache& cache, MaterialManager& mats, const SkinManager& skins, unsigned int skyboxTexture)
 {
 	if (instances.Count() == 0) return;
 
+	std::vector<std::string> loadedTextures = cache.texManager.ProcessUploadQueue();
+
+	if (!loadedTextures.empty())
+	{
+		std::cout << "[SceneRenderer] Info! " << loadedTextures.size() << " textures finished loaded. Updating materials.. \n";
+
+		for (const std::string& texPath : loadedTextures)
+		{
+			auto it = mats.textureUsageMap.find(texPath);
+			if (it != mats.textureUsageMap.end())
+			{
+				uint64_t newHandle = cache.texManager.GetTextureHandle(texPath);
+				if (newHandle != 0 && newHandle != cache.texManager.GetPlaceholderHandle())
+				{
+					for (const auto& use : it->second)
+					{
+						size_t globalMatIndex = use.first;
+						mats.UpdateMaterialTextureHandle(globalMatIndex, texPath, newHandle);
+					}
+				}
+				else
+					std::cerr << "[SceneRenderer] Warning! Got invalid handle for loaded texture " << texPath << "\n";
+			}
+		}
+	}
+
 	shader.Use();
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instances.GetSSBO());
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, mats.GetMaterialSSBO());
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+	shader.SetInt("skybox", 5);
+
+	/*glBindTextureUnit(0, cache.texManager.GetTextureArrayID(TextureType::Albedo));
+	glBindTextureUnit(1, cache.texManager.GetTextureArrayID(TextureType::MetallicRoughness));
+	glBindTextureUnit(2, cache.texManager.GetTextureArrayID(TextureType::Normal));
+	glBindTextureUnit(3, cache.texManager.GetTextureArrayID(TextureType::Emissive));
+	glBindTextureUnit(4, cache.texManager.GetTextureArrayID(TextureType::Occlusion));*/
 
 	// Material and skinning data to be bound here
 
+	mCommandBuffer.clear();
 	for (const auto& group : instances.GetMeshGroups())
 	{
 		auto meshGpuVecPtr = cache.GetMeshesPtr(group.meshPath);

@@ -2,6 +2,8 @@
 #include <OpenGL/Model/GltfLoaderData.h>
 #include <OpenGL/Application/Camera.h>
 
+#include "ResourceCache.h"
+
 struct MeshGroupInfo
 {
 	std::string meshPath;
@@ -13,6 +15,7 @@ struct SceneObject
 {
 	std::string meshPath;
 	Transform transform;
+	size_t gltfMaterialIndex;
 
 	// XR grabbing - might be temp
 	glm::vec3 grabOffset;

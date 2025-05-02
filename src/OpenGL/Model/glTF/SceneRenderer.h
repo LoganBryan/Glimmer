@@ -16,7 +16,7 @@ public:
             glDeleteBuffers(1, &mDynamicIndirectBuffer);
     }
 
-    void Draw(Shader& shader,const InstanceManager& instances, const ResourceCache& cache, const MaterialManager& mats, const SkinManager& skins);
+    void Draw(Shader& shader,const InstanceManager& instances, ResourceCache& cache, MaterialManager& mats, const SkinManager& skins, unsigned int skyboxTexture);
 
 private:
     GLuint mDynamicIndirectBuffer = 0;

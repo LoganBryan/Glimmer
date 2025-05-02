@@ -1,12 +1,15 @@
 #pragma once
 #ifndef RENDERER_H
 #define RENDERER_H
+#define GLM_ENABLE_EXPERIMENTAL
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -14,24 +17,16 @@
 #include <vector>
 #include <string>
 
+#include <variant>
+
 #include "Shader.h"
 #include "ComputeShader.h"
-//#include "OpenGL/Model/GltfLoader.h"
 #include "FPSCounter.h"
 
 #include <OpenGL/Model/glTF/ResourceCache.h>
 #include <OpenGL/Model/glTF/InstanceManager.h>
 #include <OpenGL/Model/glTF/SceneRenderer.h>
 
-//struct SceneObject
-//{
-//	GltfLoader model;
-//	Transform transform;
-//	glm::vec3 grabOffset;
-//	glm::quat grabRotationOffset;
-//	bool isGrabbed = false;
-//	int grabbedByHand = -1; // -1 none, 0 left, 1 right
-//};
 
 struct alignas(16) LightData
 {
@@ -68,7 +63,6 @@ public:
 	void Init();
 	void Render(float width, float height);
 
-	//void AddObject(const std::filesystem::path& modelPath, Shader& shader);
 	//void UpdateGrabbedObject(int objectIndex, const glm::vec3& position, const glm::quat& rotation, const glm::vec3& grabOffset);
 
 	// TODO: replace with a function to retrieve and update the closest object
@@ -85,13 +79,10 @@ private:
 	std::vector<GLuint> materialUBOs;
 	std::shared_ptr<Skin> skinHandle;
 
-	MaterialManager matManager;
-	SkinManager skinManager;
 	InstanceManager instanceManager;
 	SceneRenderer sceneRenderer;
 	std::vector<SceneObject> sceneObjs;
 
-	//std::vector<std::unique_ptr<SceneObject>> sceneObjects; // TODO: should update this to have multiple containers, grabbable objects, scene objects and player objects (hands, body etc)
 	std::vector<LightData> lightsWorld;
 	std::vector<LightData> lightsView;
 

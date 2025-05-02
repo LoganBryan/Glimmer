@@ -1,25 +1,19 @@
 #version 460 core
+#extension GL_ARB_bindless_texture : require
 
 in mat3 TBN;
 in vec3 N; // Normal in view space 
-//in vec3 L; // Light dir in view space 
 in vec3 V; // View dir in view space 
 in vec3 fragPosView;
 in vec2 texCoord;
-in vec3 normal;
-in vec4 tangent;
+
+flat in uint MaterialIndex;
 
 layout(location = 0) out vec4 fragColor;
 
 uniform vec2 uvOffset;
 uniform vec2 uvScale;
 uniform float uvRotation;
-
-const uint HAS_BASE_COLOR = 1;
-const uint HAS_METALLIC_ROUGHNESS = 2;
-const uint HAS_NORMAL_MAP = 4;
-const uint HAS_EMISSIVE = 8;
-const uint HAS_OCCLUSION = 16;
 
 const float PI = 3.1415926;
 
@@ -38,20 +32,34 @@ uniform float zFar;
 uniform uvec3 gridSize; 
 uniform uvec2 screenDim;      
 
-layout(location = 0) uniform sampler2D albedoTexture;
-layout(binding = 0, std140) uniform MaterialUniforms {
+uniform uvec2 u_placeholderTextureHandle;
+struct MaterialUniforms
+{
 	vec4 baseColorFactor;
-    float alphaCutoff;
-    float metallicFactor;
-    float roughnessFactor;
-    uint flags;
-} material;
+	vec3 emissiveFactor;
 
-layout(location = 1) uniform sampler2D metallicRoughnessTexture;
-layout(location = 2) uniform sampler2D normalTexture;
-layout(location = 3) uniform sampler2D emissiveTexture;
-layout(location = 4) uniform sampler2D occlusionTexture;
-layout(location = 5) uniform samplerCube skybox;
+	float metallicFactor;
+	float roughnessFactor;
+	float normalScale;
+	float occlusionStrength;
+	float alphaCutoff;
+
+	uvec2 baseColorTextureHandle;
+	uvec2 metallicRoughnessTextureHandle;
+
+	uvec2 normalTextureHandle;
+	uvec2 occlusionTextureHandle;
+
+	uvec2 emissiveTextureHandle;
+
+	uint flags;
+	uint _padding1;
+};
+layout(std430, binding = 3) readonly buffer MaterialBuffer {
+	MaterialUniforms materials[];
+} materialData;
+
+layout(binding = 5) uniform samplerCube skybox;
 
 struct Light
 {
@@ -139,9 +147,9 @@ vec3 CalcDirectionalLight(Light light, vec3 N, vec3 V, vec4 baseColor, float rou
 	float NDF = DistributionGGX(N, H, roughness);
 	float G = GeometrySmith(N, V, L, roughness);
 
-	float reflectance = mix(0.05, 0.17, roughness);
-	vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
-	vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+//	float reflectance = mix(0.05, 0.17, roughness);
+	vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
+	vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - max(dot(H, V), 0.0), 0.0, 1.0), 5.0); 
 
 	vec3 numerator = NDF * G * F;
 	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
@@ -165,9 +173,9 @@ vec3 CalcPointLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness
 	float NDF = DistributionGGX(N, H, roughness);
 	float G = GeometrySmith(N, V, L, roughness);
 
-	float reflectance = mix(0.05, 0.17, roughness);
-	vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
-	vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+	//float reflectance = mix(0.05, 0.17, roughness);
+	vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
+	vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - max(dot(H, V), 0.0), 0.0, 1.0), 5.0); 
 
 	vec3 numerator = NDF * G * F;
 	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
@@ -194,9 +202,9 @@ vec3 CalcSpotLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness,
 	float NDF = DistributionGGX(N, H, roughness);
 	float G = GeometrySmith(N, V, L, roughness);
 
-	float reflectance = mix(0.05, 0.17, roughness);
-	vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
-	vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+	//float reflectance = mix(0.05, 0.17, roughness);
+	vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
+	vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - max(dot(H, V), 0.0), 0.0, 1.0), 5.0); 
 
 	vec3 numerator = NDF * G * F;
 	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
@@ -227,9 +235,9 @@ vec3 CalcAreaLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness,
 			float NDF = DistributionGGX(N, H, roughness);
 			float G = GeometrySmith(N, V, L, roughness);
 
-			float reflectance = mix(0.05, 0.17, roughness);
-			vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
-			vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
+			//float reflectance = mix(0.05, 0.17, roughness);
+			vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
+			vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - max(dot(H, V), 0.0), 0.0, 1.0), 5.0); 
 
 			vec3 numerator = NDF * G * F;
 			float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
@@ -275,52 +283,68 @@ uint ComputeClusterIndex()
 
 void main()
 {
-	vec4 baseColor = material.baseColorFactor;
-	if ((material.flags & HAS_BASE_COLOR) == HAS_BASE_COLOR)
+	MaterialUniforms mat = materialData.materials[MaterialIndex];
+	vec2 finalUV = transformUV(texCoord);
+
+    vec4 baseColor = mat.baseColorFactor;
+
+//	if (((mat.flags & 1u) != 0u) && (mat.baseColorTextureHandle != u_placeholderTextureHandle))
+	if ((mat.baseColorTextureHandle != u_placeholderTextureHandle))
 	{
-		vec4 texColor = texture(albedoTexture, transformUV(texCoord));
-
-		float factor = (rand(gl_FragCoord.xy) - 0.5) / 8;
-
-		if (baseColor.a < material.alphaCutoff + factor)
-			discard;
-
-		baseColor *= vec4(pow(texColor.rgb, vec3(2.2)), texColor.a); 
+		sampler2D baseColorSampler = sampler2D(mat.baseColorTextureHandle);
+		vec4 texColor = texture(baseColorSampler, finalUV);
+		baseColor *= texColor;
 	}
-	else
-	{
-		baseColor.rgb = pow(baseColor.rgb, vec3(2.2));
-	}
+	if (baseColor.a < mat.alphaCutoff) {
+        discard;
+    }
 
 	// Normal map transform
 	vec3 viewNormal = vec3(N); // Default to vertex normal
-    if ((material.flags & HAS_NORMAL_MAP) == HAS_NORMAL_MAP) {
-        vec3 tangentNormal = texture(normalTexture, transformUV(texCoord)).rgb;
-		tangentNormal.g = 1.0 - tangentNormal.g;
-		tangentNormal = tangentNormal * 2.0 - 1.0;
-		viewNormal = normalize(TBN * tangentNormal);
-    }
-
-	// Metallic-Roughness map
-	float roughness = clamp(material.roughnessFactor, 0.05, 1.0);
-	float metallic = clamp(material.metallicFactor, 0.0, 1.0);
-
-	if ((material.flags & HAS_METALLIC_ROUGHNESS) == HAS_METALLIC_ROUGHNESS)
+//	if (((mat.flags & 4u) != 0u) && (mat.normalTextureHandle != u_placeholderTextureHandle))
+	if ((mat.normalTextureHandle != u_placeholderTextureHandle))
 	{
-		vec4 metRoughSample = texture(metallicRoughnessTexture, transformUV(texCoord));
-		roughness = clamp(metRoughSample.g * material.roughnessFactor, 0.05, 1.0);
-		metallic = clamp(metRoughSample.b * material.metallicFactor, 0.05, 1.0);
+		sampler2D normalSampler = sampler2D(mat.normalTextureHandle);
+		vec3 tangentNormal = texture(normalSampler, finalUV).rgb * 2.0 - 1.0;
+		viewNormal = normalize(TBN * tangentNormal);
+	}
+	
+	// Metallic-Roughness map
+	float roughness = clamp(mat.roughnessFactor, 0.05, 1.0);
+	float metallic = clamp(mat.metallicFactor, 0.0, 1.0);
+
+//	if (((mat.flags & 2u) != 0u) && (mat.metallicRoughnessTextureHandle != u_placeholderTextureHandle))
+	if ((mat.metallicRoughnessTextureHandle != u_placeholderTextureHandle))
+	{
+		sampler2D metallicRoughnessSampler = sampler2D(mat.metallicRoughnessTextureHandle);
+		vec4 mrSample = texture(metallicRoughnessSampler, finalUV);
+
+		metallic = clamp(mrSample.b * mat.metallicFactor, 0.0, 1.0);
+		roughness = clamp(mrSample.g * mat.roughnessFactor, 0.05, 1.0);
+	}
+
+	// Ambient Occlusion
+	float ambientOcclusion = 1.0;
+
+//	if (((mat.flags & 16u) != 0u) && (mat.occlusionTextureHandle != u_placeholderTextureHandle))
+	if ((mat.occlusionTextureHandle != u_placeholderTextureHandle))
+	{
+		sampler2D occlusionSampler = sampler2D(mat.occlusionTextureHandle);
+		float occlusionSample = texture(occlusionSampler, finalUV).r;
+
+		ambientOcclusion = mix(1.0, occlusionSample, mat.occlusionStrength);
 	}
 
 	// Emissive map
-	vec4 emissiveColor = vec4(0.0);
-	if ((material.flags & HAS_EMISSIVE) == HAS_EMISSIVE) {
-		emissiveColor = texture(emissiveTexture, transformUV(texCoord));
-	}
+    vec3 emissive = mat.emissiveFactor; 
 
-	float ambientOcclusion = 1.0;
-	if ((material.flags & HAS_OCCLUSION) == HAS_OCCLUSION) {
-		ambientOcclusion = texture(occlusionTexture, transformUV(texCoord)).r;
+//	if (((mat.flags & 8u) != 0u) && (mat.emissiveTextureHandle != u_placeholderTextureHandle))
+	if ((mat.emissiveTextureHandle != u_placeholderTextureHandle))
+	{
+		sampler2D emissiveSampler = sampler2D(mat.emissiveTextureHandle);
+		vec3 emissiveSample = texture(emissiveSampler, finalUV).rgb;
+
+		emissive *= emissiveSample.rgb;
 	}
 	
 	// Fetch Cluster
@@ -355,9 +379,9 @@ void main()
 
 	// Fresnel
 	float NdotV = max(dot(viewNormal, V), 0.0);
-	float reflectance = mix(0.05, 0.17, roughness);
-	vec3 F0 = mix(vec3(reflectance), baseColor.rgb, metallic);
-	vec3 F = F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);
+//	float reflectance = mix(0.05, 0.17, roughness);
+	vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
+	vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - NdotV, 0.0, 1.0), 5.0);
 	vec3 kD = (1.0 - F) * (1.0 - metallic);
 
 	// Simplified IBL
@@ -379,7 +403,21 @@ void main()
 	vec3 finalColor = lighting * exposure; 
 	finalColor = ACESFilm(finalColor);
 	finalColor = pow(finalColor, vec3(1.0/2.2)); // Gamma correct
-	finalColor += emissiveColor.rgb;
+	finalColor += emissive;
 
 	fragColor = vec4(finalColor, baseColor.a);
+	//fragColor = baseColor;
+
+//	if (MaterialIndex == 0u)
+//	{
+//		fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+//	}
+//	else if (MaterialIndex == 1u)
+//	{
+//		fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+//	}
+//	else
+//	{
+//		fragColor = vec4(0.0, 0.0, 1.0, 1.0);
+//	}
 }

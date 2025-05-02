@@ -42,6 +42,16 @@ bool Application::Init()
 		return false;
 	}
 
+	if (!GLAD_GL_ARB_bindless_texture)
+	{
+		std::cerr << "FATAL! GL_ARB_bindless_texture is not supported!" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	else
+	{
+		std::cout << "GL_ARB_bindless_texture is supported!" << std::endl;
+	}
+
 	std::cout << glGetString(GL_RENDERER) << "\n" << glGetString(GL_VERSION) << std::endl;
 
 	return true;

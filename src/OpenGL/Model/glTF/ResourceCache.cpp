@@ -2,60 +2,35 @@
 
 std::shared_ptr<std::vector<MeshGPU>> ResourceCache::GetOrLoadMeshes(const std::filesystem::path& path)
 {
-    auto key = path.string();
-    auto it = meshMap.find(key);
-    if (it != meshMap.end())
+    std::string key = path.string();
+    auto it = mMeshMap.find(key);
+    if (it != mMeshMap.end())
         return it->second;
 
-    auto assetOpt = parser.Parse(path);
-    if (!assetOpt.has_value())
-        throw std::runtime_error("Failed to parse glTF: " + key);
-    const auto& asset = assetOpt.value();
+    auto assetPtr = GetParsedAsset(path);
+    if (!assetPtr)
+        throw std::runtime_error("[ResourceCache] Failed to get parsed asset for mesh " + key);
 
-    auto gpuList = uploader.UploadMeshes(asset);
+    auto gpuList = uploader.UploadMeshes(*assetPtr);
     auto meshesPtr = std::make_shared<std::vector<MeshGPU>>(std::move(gpuList));
-    meshMap[key] = meshesPtr;
+    mMeshMap[key] = meshesPtr;
     return meshesPtr;
 }
 
-GLuint ResourceCache::GetOrLoadTexture(const std::filesystem::path& path)
+size_t ResourceCache::LoadMaterialsFromAsset(const std::filesystem::path& path)
 {
-    auto key = path.generic_string();
-    auto it = textureMap.find(key);
-    if (it != textureMap.end())
-        return it->second;
+    auto assetPtr = GetParsedAsset(path);
+    if (!assetPtr)
+        throw std::runtime_error("[ResourceCache] Failed to get parsed asset for material " + path.generic_string());
 
-    GLuint placeHolder = texManager.CreatePlaceholder();
-    textureMap[key] = placeHolder;
-
-    texManager.AsyncLoad(placeHolder, key);
-    return placeHolder;
-}
-
-std::vector<GLuint> ResourceCache::GetOrLoadMaterials(const std::filesystem::path& path)
-{
-    auto key = path.generic_string();
-    auto it = materialsUBOsMap.find(key);
-    if (it != materialsUBOsMap.end())
-        return it->second;
-    
-    auto asset = parser.Parse(key);
-    if (!asset)
-        return {};
-
-    matManager.BuildMaterials(*asset);
-
-    auto uboList = matManager.GetUBOs();
-    materialsUBOsMap[key] = uboList;
-
-    return uboList;
+    return matManager.AddMaterials(*assetPtr, path, *this, texManager);
 }
 
 std::shared_ptr<Skin> ResourceCache::GetOrLoadSkin(const std::filesystem::path& path)
 {
     auto key = path.generic_string();
-    auto it = skinMap.find(key);
-    if (it != skinMap.end())
+    auto it = mSkinMap.find(key);
+    if (it != mSkinMap.end())
         return it->second;
 
     auto asset = parser.Parse(key);
@@ -69,15 +44,33 @@ std::shared_ptr<Skin> ResourceCache::GetOrLoadSkin(const std::filesystem::path& 
         return nullptr;
 
     auto ptr = std::make_shared<Skin>(skins.front());
-    skinMap[key] = ptr;
+    mSkinMap[key] = ptr;
 
     return ptr;
 }
 
 void ResourceCache::Clear()
 {
-    meshMap.clear();
-    textureMap.clear();
-    materialsUBOsMap.clear();
-    skinMap.clear();
+    mParsedAssetCache.clear();
+    mMeshMap.clear();
+    mSkinMap.clear();
+}
+
+std::shared_ptr<fastgltf::Asset> ResourceCache::GetParsedAsset(const std::filesystem::path& path)
+{
+    std::string key = path.generic_string();
+    auto it = mParsedAssetCache.find(key);
+    if (it != mParsedAssetCache.end())
+        return it->second;
+
+    auto assetOpt = parser.Parse(path);
+    if (!assetOpt)
+    {
+        throw std::runtime_error("[ResourceCache] Failed to parse glTF asset: " + key);
+    }
+
+    auto assetPtr = std::make_shared<fastgltf::Asset>(std::move(assetOpt.value()));
+    mParsedAssetCache[key] = assetPtr;
+    
+    return assetPtr;
 }

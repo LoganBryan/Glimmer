@@ -103,15 +103,36 @@ enum MaterialUniformFlags : std::uint32_t
 	HasOcclusionTexture = 1 << 4
 };
 
-struct MaterialUniforms
+struct alignas(16) MaterialUniforms
 {
-	fastgltf::math::fvec4 baseColorFactor;
-	float alphaCutoff = 0.0f;
-	float metallicFactor = 0.0f;
-	float roughnessFactor = 0.0f;
-	std::uint32_t flags = 0;
+	fastgltf::math::fvec4 baseColorFactor = fastgltf::math::fvec4(1.0f);
+	fastgltf::math::fvec3 emissiveFactor = fastgltf::math::fvec3(0.0f);
 
-	fastgltf::math::fvec2 padding;
+	float metallicFactor = 1.0f;
+	float roughnessFactor = 1.0f;
+	float normalScale = 1.0f;
+	float occlusionStrength = 1.0f;
+	float alphaCutoff = 0.5f;
+
+	uint64_t baseColorTextureHandle = 0;
+	uint64_t metallicRoughnessTextureHandle = 0;
+	uint64_t normalTextureHandle = 0;
+	uint64_t occlusionTextureHandle = 0;
+	uint64_t emissiveTextureHandle = 0;
+
+	uint32_t flags = 0;
+	uint32_t _padding = 0;
+
+	//std::uint32_t _padding_flags = 0;
+
+	//std::uint32_t baseColorLayerIndex = 0;
+	//std::uint32_t metallicRoughnessLayerIndex = 0;
+	//std::uint32_t normalLayerIndex = 0;
+	//std::uint32_t occlusionLayerIndex = 0;
+	//std::uint32_t emissiveLayerIndex = 0;
+
+	//std::uint32_t _padding = 0;
+	//std::uint32_t _padding_2 = 0;
 };
 
 struct Viewer
