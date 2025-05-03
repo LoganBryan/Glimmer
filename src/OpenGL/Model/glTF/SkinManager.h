@@ -3,8 +3,10 @@
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
 #include <fastgltf/tools.hpp>
+#include <algorithm>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <OpenGL/Model/GltfLoaderData.h>
 
@@ -12,9 +14,10 @@ class SkinManager
 {
 public:
 	SkinManager() = default;
+	~SkinManager();
 
 	void Load(const fastgltf::Asset& asset);
-	void Upload(const Transform& objectTransform);
+	void Upload(const glm::mat4& rootTransform);
 
 	bool UpdateJointTransform(const std::string& jointName, const glm::mat4& transform);
 

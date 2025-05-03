@@ -147,7 +147,6 @@ vec3 CalcDirectionalLight(Light light, vec3 N, vec3 V, vec4 baseColor, float rou
 	float NDF = DistributionGGX(N, H, roughness);
 	float G = GeometrySmith(N, V, L, roughness);
 
-//	float reflectance = mix(0.05, 0.17, roughness);
 	vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
 	vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - max(dot(H, V), 0.0), 0.0, 1.0), 5.0); 
 
@@ -173,7 +172,6 @@ vec3 CalcPointLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness
 	float NDF = DistributionGGX(N, H, roughness);
 	float G = GeometrySmith(N, V, L, roughness);
 
-	//float reflectance = mix(0.05, 0.17, roughness);
 	vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
 	vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - max(dot(H, V), 0.0), 0.0, 1.0), 5.0); 
 
@@ -202,7 +200,6 @@ vec3 CalcSpotLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness,
 	float NDF = DistributionGGX(N, H, roughness);
 	float G = GeometrySmith(N, V, L, roughness);
 
-	//float reflectance = mix(0.05, 0.17, roughness);
 	vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
 	vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - max(dot(H, V), 0.0), 0.0, 1.0), 5.0); 
 
@@ -235,7 +232,6 @@ vec3 CalcAreaLight(Light light, vec3 N, vec3 V, vec4 baseColor, float roughness,
 			float NDF = DistributionGGX(N, H, roughness);
 			float G = GeometrySmith(N, V, L, roughness);
 
-			//float reflectance = mix(0.05, 0.17, roughness);
 			vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
 			vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - max(dot(H, V), 0.0), 0.0, 1.0), 5.0); 
 
@@ -379,7 +375,6 @@ void main()
 
 	// Fresnel
 	float NdotV = max(dot(viewNormal, V), 0.0);
-//	float reflectance = mix(0.05, 0.17, roughness);
 	vec3 F0 = mix(vec3(0.04), baseColor.rgb, metallic);
 	vec3 F = F0 + (1.0 - F0) * pow(clamp(1.0 - NdotV, 0.0, 1.0), 5.0);
 	vec3 kD = (1.0 - F) * (1.0 - metallic);
@@ -406,18 +401,4 @@ void main()
 	finalColor += emissive;
 
 	fragColor = vec4(finalColor, baseColor.a);
-	//fragColor = baseColor;
-
-//	if (MaterialIndex == 0u)
-//	{
-//		fragColor = vec4(1.0, 0.0, 0.0, 1.0);
-//	}
-//	else if (MaterialIndex == 1u)
-//	{
-//		fragColor = vec4(0.0, 1.0, 0.0, 1.0);
-//	}
-//	else
-//	{
-//		fragColor = vec4(0.0, 0.0, 1.0, 1.0);
-//	}
 }

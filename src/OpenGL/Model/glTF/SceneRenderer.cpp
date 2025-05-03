@@ -1,6 +1,6 @@
 #include "SceneRenderer.h"
 
-void SceneRenderer::Draw(Shader& shader, const InstanceManager& instances, ResourceCache& cache, MaterialManager& mats, const SkinManager& skins, unsigned int skyboxTexture)
+void SceneRenderer::Draw(Shader& shader, const InstanceManager& instances, ResourceCache& cache, MaterialManager& mats, SkinManager& skins, unsigned int skyboxTexture)
 {
 	if (instances.Count() == 0) return;
 
@@ -37,12 +37,6 @@ void SceneRenderer::Draw(Shader& shader, const InstanceManager& instances, Resou
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 	shader.SetInt("skybox", 5);
-
-	/*glBindTextureUnit(0, cache.texManager.GetTextureArrayID(TextureType::Albedo));
-	glBindTextureUnit(1, cache.texManager.GetTextureArrayID(TextureType::MetallicRoughness));
-	glBindTextureUnit(2, cache.texManager.GetTextureArrayID(TextureType::Normal));
-	glBindTextureUnit(3, cache.texManager.GetTextureArrayID(TextureType::Emissive));
-	glBindTextureUnit(4, cache.texManager.GetTextureArrayID(TextureType::Occlusion));*/
 
 	// Material and skinning data to be bound here
 

@@ -71,6 +71,7 @@ public:
 	void SetupClusterSSBO();
 	void CullLights();
 
+	void TestJointTransformLeftGlove();
 private:
 	GLFWwindow* window;
 	FPSCounter fpsCounter;

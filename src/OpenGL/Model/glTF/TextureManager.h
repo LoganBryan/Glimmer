@@ -37,7 +37,6 @@ public:
 	static constexpr int targetWidth = 2048;
 	static constexpr int targetHeight = 2048;
 	// Max textures per array
-	//static constexpr GLsizei maxLayers = 64;
 
 	TextureManager();
 	~TextureManager();
@@ -52,17 +51,9 @@ public:
 
 	void QueueLoadedTexture(const std::string& identifier, int width, int height, int channels, unsigned char* loadedPixelData, bool srgb);
 
-	//GLuint GetTextureArrayID(TextureType type) const;
 	std::unordered_map<std::string, TextureInfo> mTextureCache;
 
 private:
-	//struct TextureArrayInfo
-	//{
-	//	GLuint textureID = 0;
-	//	uint32_t nextLayerIndex = 1;
-	//	std::unordered_map<std::string, uint32_t> loadedTextures;
-	//};
-
 	struct QueuedUpload
 	{
 		TextureType type{};
@@ -74,8 +65,6 @@ private:
 		std::unique_ptr<unsigned char[]> resizedData;
 	};
 
-	//std::unordered_map<TextureType, TextureArrayInfo> mTextureArrays;
-
 	TextureInfo mPlaceholderTexture;
 
 	std::vector<QueuedUpload> mUploadQueue;
@@ -83,9 +72,6 @@ private:
 	std::vector<std::string> mCompletedLoads;
 
 private:
-	//void InitTextureArray(TextureType type);
-	//GLuint CreateTextureArrayObj(GLenum internalFormat);
-
 	void CreatePlaceholderTexture();
 	void QueueTextureLoad(const std::filesystem::path& path, bool srgb, ResourceCache& cache);
 	void UploadTextureData(const QueuedUpload& upload, TextureInfo& texInfo);

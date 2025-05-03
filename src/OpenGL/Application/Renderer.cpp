@@ -77,6 +77,7 @@ void Renderer::Init()
 	{
 		cache.GetOrLoadMeshes(gltfFile);
 		cache.LoadMaterialsFromAsset(gltfFile);
+		cache.GetOrLoadSkin(leftGlove);
 
 		assetPtr = cache.GetParsedAsset(gltfFile);
 		if (assetPtr && !assetPtr->meshes.empty() && !assetPtr->meshes[0].primitives.empty())
@@ -88,8 +89,6 @@ void Renderer::Init()
 			std::cerr << "Warning! Could not determine material index from glTF: " << gltfFile << ". Using default!" << std::endl;
 			firstPrimMatIndex = 0;
 		}
-
-		// TODO: skin loading here
 	}
 	catch (const std::runtime_error& e)
 	{
@@ -97,25 +96,24 @@ void Renderer::Init()
 		return;
 	}
 
-	std::shared_ptr<fastgltf::Asset> assetPtrFlight = nullptr;
-	size_t firstPrimMatIndexFlight = 0;
+	std::shared_ptr<fastgltf::Asset> assetPtrGlove = nullptr;
+	size_t firstPrimMatIndexGlove = 0;
 	try
 	{
 		cache.GetOrLoadMeshes(leftGlove);
 		cache.LoadMaterialsFromAsset(leftGlove);
+		cache.GetOrLoadSkin(leftGlove);
 
-		assetPtrFlight = cache.GetParsedAsset(leftGlove);
-		if (assetPtrFlight && !assetPtrFlight->meshes.empty() && !assetPtrFlight->meshes[0].primitives.empty())
+		assetPtrGlove = cache.GetParsedAsset(leftGlove);
+		if (assetPtrGlove && !assetPtrGlove->meshes.empty() && !assetPtrGlove->meshes[0].primitives.empty())
 		{
-			firstPrimMatIndexFlight = assetPtrFlight->meshes[0].primitives[0].materialIndex.value_or(0);
+			firstPrimMatIndexGlove = assetPtrGlove->meshes[0].primitives[0].materialIndex.value_or(0);
 		}
 		else
 		{
 			std::cerr << "Warning! Could not determine material index from glTF: " << leftGlove << ". Using default!" << std::endl;
-			firstPrimMatIndexFlight = 0;
+			firstPrimMatIndexGlove = 0;
 		}
-
-		// TODO: skin loading here
 	}
 	catch (const std::runtime_error& e)
 	{
@@ -155,7 +153,7 @@ void Renderer::Init()
 
 	glm::vec3 start = glm::vec3(0.0f);
 
-	for (int i = 0; i < 50; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		SceneObject sceneObj;
 		sceneObj.meshPath = gltfFile.string();
@@ -167,7 +165,6 @@ void Renderer::Init()
 
 		glm::mat4 finalMatrix = instMat * nodeTransform;
 
-		// TODO: should eventually update transform to support setting matrix so i don't have to do this
 		glm::vec3 decompScale;
 		glm::quat decompRot;
 		glm::vec3 decompPos;
@@ -191,7 +188,7 @@ void Renderer::Init()
 	//		return a.meshPath < b.meshPath;
 	//	});
 
-	for (int i = 0; i < 50; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		SceneObject sceneObj;
 		sceneObj.meshPath = leftGlove.string();
@@ -199,7 +196,7 @@ void Renderer::Init()
 		sceneObj.transform.rotation = glm::quat(1, 0, 0, 0);
 		sceneObj.transform.scale = glm::vec3(1.0f);
 
-		sceneObj.gltfMaterialIndex = firstPrimMatIndexFlight;
+		sceneObj.gltfMaterialIndex = firstPrimMatIndexGlove;
 
 		sceneObjs.push_back(sceneObj);
 
@@ -348,6 +345,7 @@ void Renderer::Render(float width, float height)
 	mainShader.SetMatrix4("view", camMatrices.view);
 
 	auto& cache = ResourceCache::Get();
+	cache.skinManager.Upload(model);
 	sceneRenderer.Draw(mainShader, instanceManager, cache, cache.matManager, cache.skinManager, skyboxTexture);
 
 	// Skybox - Drawn last
@@ -410,4 +408,36 @@ void Renderer::CullLights()
 
 	GLuint groups = (clusterCount + localSize - 1) / localSize;
 	cullLightShader.Dispatch(groups, 1, 1);
+}
+
+void Renderer::TestJointTransformLeftGlove()
+{
+	auto& cache = ResourceCache::Get();
+
+	glm::mat4 indexMatrix = glm::mat4(1.0f);
+	indexMatrix = glm::rotate(indexMatrix, glm::radians(35.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	glm::mat4 middleMatrix = glm::mat4(1.0f);
+	middleMatrix = glm::rotate(middleMatrix, glm::radians(20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	glm::mat4 ringMatrix = glm::mat4(1.0f);
+	ringMatrix = glm::rotate(ringMatrix, glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	cache.skinManager.UpdateJointTransform("finger_index_meta_l", indexMatrix);
+	cache.skinManager.UpdateJointTransform("finger_index_0_l", indexMatrix);
+	cache.skinManager.UpdateJointTransform("finger_index_1_l", indexMatrix);
+	cache.skinManager.UpdateJointTransform("finger_index_2_l", indexMatrix);
+	cache.skinManager.UpdateJointTransform("finger_index_l_end", indexMatrix);
+
+	cache.skinManager.UpdateJointTransform("finger_middle_meta_l", middleMatrix);
+	cache.skinManager.UpdateJointTransform("finger_middle_0_l", middleMatrix);
+	cache.skinManager.UpdateJointTransform("finger_middle_1_l", middleMatrix);
+	cache.skinManager.UpdateJointTransform("finger_middle_2_l", middleMatrix);
+	cache.skinManager.UpdateJointTransform("finger_middle_l_end", middleMatrix);
+
+	cache.skinManager.UpdateJointTransform("finger_ring_meta_l", ringMatrix);
+	cache.skinManager.UpdateJointTransform("finger_ring_0_l", ringMatrix);
+	cache.skinManager.UpdateJointTransform("finger_ring_1_l", ringMatrix);
+	cache.skinManager.UpdateJointTransform("finger_ring_2_l", ringMatrix);
+	cache.skinManager.UpdateJointTransform("finger_ring_l_end", ringMatrix);
 }

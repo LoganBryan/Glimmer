@@ -2,7 +2,7 @@
 
 std::shared_ptr<std::vector<MeshGPU>> ResourceCache::GetOrLoadMeshes(const std::filesystem::path& path)
 {
-    std::string key = path.string();
+    std::string key = path.generic_string();
     auto it = mMeshMap.find(key);
     if (it != mMeshMap.end())
         return it->second;
@@ -19,9 +19,11 @@ std::shared_ptr<std::vector<MeshGPU>> ResourceCache::GetOrLoadMeshes(const std::
 
 size_t ResourceCache::LoadMaterialsFromAsset(const std::filesystem::path& path)
 {
+    std::string key = path.generic_string();
+
     auto assetPtr = GetParsedAsset(path);
     if (!assetPtr)
-        throw std::runtime_error("[ResourceCache] Failed to get parsed asset for material " + path.generic_string());
+        throw std::runtime_error("[ResourceCache] Failed to get parsed asset for material " + key);
 
     return matManager.AddMaterials(*assetPtr, path, *this, texManager);
 }
