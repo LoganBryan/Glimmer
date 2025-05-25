@@ -122,17 +122,6 @@ struct alignas(16) MaterialUniforms
 
 	uint32_t flags = 0;
 	uint32_t _padding = 0;
-
-	//std::uint32_t _padding_flags = 0;
-
-	//std::uint32_t baseColorLayerIndex = 0;
-	//std::uint32_t metallicRoughnessLayerIndex = 0;
-	//std::uint32_t normalLayerIndex = 0;
-	//std::uint32_t occlusionLayerIndex = 0;
-	//std::uint32_t emissiveLayerIndex = 0;
-
-	//std::uint32_t _padding = 0;
-	//std::uint32_t _padding_2 = 0;
 };
 
 struct Viewer

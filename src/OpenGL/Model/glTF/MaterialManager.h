@@ -9,6 +9,7 @@
 
 #include <OpenGL/Model/GltfLoaderData.h>
 #include <stb_image.h>
+#include <string>
 
 #include "TextureManager.h"
 

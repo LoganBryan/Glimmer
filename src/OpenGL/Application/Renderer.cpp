@@ -46,7 +46,7 @@ void Renderer::Init()
 
 	Viewer viewer;
 
-	gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.glb");
+	gltfFile = std::filesystem::path("assets/models/helmet/DamagedHelmet.gltf");
 	auto leftGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_left_model.glb");
 	auto flight = std::filesystem::path("assets/models/flightHelm/flight.glb");
 	auto rightGlove = std::filesystem::path("assets/models/steamvr_glove/vr_glove_right_model.glb");
@@ -77,7 +77,7 @@ void Renderer::Init()
 	{
 		cache.GetOrLoadMeshes(gltfFile);
 		cache.LoadMaterialsFromAsset(gltfFile);
-		cache.GetOrLoadSkin(leftGlove);
+		cache.GetOrLoadSkin(gltfFile);
 
 		assetPtr = cache.GetParsedAsset(gltfFile);
 		if (assetPtr && !assetPtr->meshes.empty() && !assetPtr->meshes[0].primitives.empty())
@@ -153,7 +153,7 @@ void Renderer::Init()
 
 	glm::vec3 start = glm::vec3(0.0f);
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 100; i++)
 	{
 		SceneObject sceneObj;
 		sceneObj.meshPath = gltfFile.string();

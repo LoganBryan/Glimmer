@@ -202,10 +202,57 @@ size_t MaterialManager::AddMaterials(const fastgltf::Asset& asset, const std::fi
 					[&](const fastgltf::sources::Array& arr)
 					{
 						imageIdentifier = key + "_img" + std::to_string(imageIndex) + "_arr";
-						std::cerr << "[MaterialManager] Warning! Attempt to load from Array Source! This is currently unsupported! " << imageIdentifier << "\n";
-						resolvedHandle = placeholderHandle;
-						handledSuccessfully = false;
 
+						// Check texture cache
+						auto it = texManager.mTextureCache.find(imageIdentifier);
+						if (it != texManager.mTextureCache.end())
+						{
+							if (it->second.handle != 0 || it->second.isLoading)
+							{
+								if (it->second.handle == 0) // Still loading!
+								{
+									textureUsageMap[imageIdentifier].push_back({ baseId + i, type });
+								}
+								resolvedHandle = texManager.GetTextureHandle(imageIdentifier);
+								handledSuccessfully = (resolvedHandle != placeholderHandle) || it->second.isLoading;
+								return;
+							}
+							it->second.isLoading = true;
+						}
+						else
+						{
+							texManager.mTextureCache[imageIdentifier] = TextureInfo{ .isLoading = true };
+						}
+
+						if (arr.bytes.empty())
+						{
+							std::cerr << "[MaterialManager] Error! Array data is empty for " << imageIdentifier << "\n";
+							resolvedHandle = placeholderHandle;
+							handledSuccessfully = false;
+							texManager.mTextureCache[imageIdentifier].isLoading = false;
+							return;
+						}
+
+						const unsigned char* imgDataPtr = reinterpret_cast<const unsigned char*>(arr.bytes.data());
+						int imgDataLength = static_cast<int>(arr.bytes.size());
+
+						int width = 0, height = 0, nChannels = 0;
+						unsigned char* pixelDataFromMem = stbi_load_from_memory(imgDataPtr, imgDataLength, &width, &height, &nChannels, 4);
+
+						if (!pixelDataFromMem)
+						{
+							std::cerr << "[MaterialManager] Error! Image load from memory FAILED for " << imageIdentifier << "\n Reason: " << stbi_failure_reason() << "\n";
+							resolvedHandle = placeholderHandle;
+							handledSuccessfully = false;
+							texManager.mTextureCache[imageIdentifier].isLoading = false;
+						}
+						else
+						{
+							texManager.QueueLoadedTexture(imageIdentifier, width, height, 4, pixelDataFromMem, srgb);
+							resolvedHandle = placeholderHandle;
+							textureUsageMap[imageIdentifier].push_back({ baseId + i, type });
+							handledSuccessfully = true;
+						}
 					},
 					[](const auto& other) {}
 					}, image.data);
